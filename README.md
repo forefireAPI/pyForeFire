@@ -7,22 +7,24 @@ It provide numerous ForeFire bindings, written with pybind11 python library.
 
 ### Prerequisite
 
-- pybind11 library (can be installed with homebrew on Mac) [`https://pybind11.readthedocs.io/en/stable/index.html`]
 - NetCDF and NetCDF-Cxx libraries (can be installed with homebrew on Mac) [`https://www.unidata.ucar.edu/software/netcdf`]
 - ForeFire C++ library and Headers [`https://github.com/forefireAPI/firefront`]
-- wheel pip package for building with python (`pip install wheel`)
 
 #### Build and install wheel with Python
 
-This will create and install pyforefire package inside current Python interpreter.
+This will build and install pyforefire package inside current Python interpreter.
 
 ```bash
-FOREFIRE_DIR=path/to/forefire NETCDF_DIR=path/to/netcdf NETCDF_CXX_DIR=path/to/netcdf_cxx python setup.py bdist_wheel
-
-pip install dist/pyforefire*.whl
+FOREFIRE_DIR=path/to/forefire NETCDF_DIR=path/to/netcdf NETCDF_CXX_DIR=path/to/netcdf_cxx pip install .
 ```
 
-#### Build shared library using cmake
+This will only build pyforefire wheel inside current folder.
+
+```bash
+FOREFIRE_DIR=path/to/forefire NETCDF_DIR=path/to/netcdf NETCDF_CXX_DIR=path/to/netcdf_cxx pip wheel .
+```
+
+#### Build shared library using cmake [Deprecated]
 
 This will create pyforefire shared library inside lib folder.
 

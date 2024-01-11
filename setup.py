@@ -1,6 +1,6 @@
 import os
 import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
 
@@ -38,6 +38,7 @@ print([FOREFIRE_DIR + '/lib/lib' + FOREFIRE_LIB + '.dylib'])
 setup(
     name="pyforefire",
     version="0.1",
+    requires=['pybind11', 'setuptools', 'wheel'],
     author="Filippi Jean-Baptiste",
     author_email="filippi_j@univ-corse.fr",
     description="Python version of ForeFire library",
