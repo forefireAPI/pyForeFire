@@ -16,6 +16,8 @@ venv
 lib
 dist
 build
-pyforefire.egg-info
+
 pybind11*
 pyforefire-*
+wheelhouse
+pyforefire.egg-info

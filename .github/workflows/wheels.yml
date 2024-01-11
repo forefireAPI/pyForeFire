@@ -22,8 +22,11 @@ jobs:
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
         # to supply options, put them in 'env', like:
-        # env:
-        #   CIBW_SOME_OPTION: value
+        env:
+            #   CIBW_SOME_OPTION: value
+            FOREFIRE_DIR: /Users/qduriani/Developer/Stage/firefront
+            NETCDF_DIR: /opt/homebrew/Cellar/netcdf/4.9.2_1
+            NETCDF_CXX_DIR: /opt/homebrew/Cellar/netcdf-cxx/4.3.1_1
 
       - uses: actions/upload-artifact@v4
         with:

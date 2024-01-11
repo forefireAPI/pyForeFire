@@ -1,6 +1,6 @@
 import os
 import sys
-from setuptools import setup, find_packages
+from setuptools import setup
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
 
@@ -32,8 +32,6 @@ ext_modules = [
         extra_objects=[FOREFIRE_DIR + '/lib/lib' + FOREFIRE_LIB + '.dylib']
     ),
 ]
-
-print([FOREFIRE_DIR + '/lib/lib' + FOREFIRE_LIB + '.dylib'])
 
 setup(
     name="pyforefire",
