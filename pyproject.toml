@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyforefire"
-version = "2024.01"
+version = "2024.1"
 dependencies = [
     "pybind11",
 ]

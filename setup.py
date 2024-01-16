@@ -35,7 +35,7 @@ ext_modules = [
 
 setup(
     name="pyforefire",
-    version="0.1",
+    version="2024.1",
     requires=['pybind11', 'setuptools', 'wheel'],
     author="Filippi Jean-Baptiste",
     author_email="filippi_j@univ-corse.fr",

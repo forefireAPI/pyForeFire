@@ -40,8 +40,8 @@ void createDomain( int id
 		,  double dt);
 
 
-void addScalarLayer(char *type,char *name, double x0 , double y0, double t0, double width , double height, double timespan, int nnx, int nny, int nnz, double* values);
-void addIndexLayer(char *type,char *name, double x0 , double y0, double t0, double width , double height, double timespan, int nnx, int nny, int nnz, py::array_t<int> values);
+void addScalarLayer(char *type,char *name, double x0 , double y0, double t0, double width , double height, double timespan, int nnx, int nny, int nnz, int nnl, py::array_t<double> values);
+void addIndexLayer(char *type,char *name, double x0 , double y0, double t0, double width , double height, double timespan, int nnx, int nny, int nnz, int nnl, py::array_t<int> values);
 void addLayer(char*, char* ,char*);
 void setInt(char* name, int val);
 int getInt(char* name );

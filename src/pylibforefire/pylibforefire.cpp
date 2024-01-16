@@ -106,7 +106,7 @@ string PLibForeFire::execute(char *command)
 }
 
 
-void PLibForeFire::addScalarLayer(char *type, char *name, double x0 , double y0, double t0, double width , double height, double timespan, int nnx, int nny, int nnz,  double* values){
+void PLibForeFire::addScalarLayer(char *type, char *name, double x0 , double y0, double t0, double width , double height, double timespan, int nnx, int nny, int nnz, int nnl, py::array_t<double> values){
 
 	FFPoint *p0 = new FFPoint(x0,y0,0);
 	FFPoint *pe = new FFPoint(width,height,0);
@@ -116,13 +116,13 @@ void PLibForeFire::addScalarLayer(char *type, char *name, double x0 , double y0,
 	size_t ni = nnx;
 	size_t nj = nny;
 	size_t nk = nnz;
-	size_t nl = 1;
+	size_t nl = nnl;
 
- 	pyxecutor->getDomain()->addScalarLayer(type, lname, x0, y0, t0, width, height, timespan, ni, nj, nk, nl, values);
+ 	pyxecutor->getDomain()->addScalarLayer(type, lname, x0, y0, t0, width, height, timespan, ni, nj, nk, nl, values.mutable_data());
 
 }
 
-void PLibForeFire::addIndexLayer(char *type, char *name, double x0 , double y0, double t0, double width , double height, double timespan, int nnx, int nny, int nnz, py::array_t<int> values){
+void PLibForeFire::addIndexLayer(char *type, char *name, double x0 , double y0, double t0, double width , double height, double timespan, int nnx, int nny, int nnz, int nnl, py::array_t<int> values){
 	FFPoint *p0 = new FFPoint(x0,y0,0);
 	FFPoint *pe = new FFPoint(width,height,0);
 	string lname(name);
@@ -131,7 +131,7 @@ void PLibForeFire::addIndexLayer(char *type, char *name, double x0 , double y0, 
 	size_t ni = nnx;
 	size_t nj = nny;
 	size_t nk = nnz;
-	size_t nl = 1;
+	size_t nl = nnl;
 
  	pyxecutor->getDomain()->addIndexLayer(ltype, lname, x0, y0, t0, width, height, timespan, ni, nj, nk, nl, values.mutable_data());
 }
@@ -143,17 +143,12 @@ py::array_t<double> PLibForeFire::getDoubleArray(char* name){
 }
 
 py::array_t<double> PLibForeFire::getDoubleArray(char* name, double t){
-	// double** outA;
-	// int* outNI;
-	// int* outNJ;
-	// int* outNK;
 	string lname(name);
 	FluxLayer<double>* myFluxLayer = pyxecutor->getDomain()->getFluxLayer(lname);
 
 		if ( myFluxLayer ){
 			FFArray<double>* srcD;
 			myFluxLayer->getMatrix(&srcD, t);
-			// ADDED
 			double* data = srcD->getData();
 			int nnx = srcD->getDim("x");
 			int nny = srcD->getDim("y");
@@ -165,13 +160,6 @@ py::array_t<double> PLibForeFire::getDoubleArray(char* name, double t){
 				data
 			);
 			return arr;
-			// if (srcD != 0) {
-			// 	*outNI = srcD->getDim("x");
-			// 	*outNJ = srcD->getDim("y");
-			// 	*outNK = srcD->getDim("z");
-			// 	*outA =  srcD->getData();
-			// 	return;
-			// }
 		}
 
 	DataLayer<double>* myDataLayer = pyxecutor->getDomain()->getDataLayer(lname);
@@ -179,7 +167,6 @@ py::array_t<double> PLibForeFire::getDoubleArray(char* name, double t){
 		if ( myDataLayer ){
 			FFArray<double>* srcD;
 			myDataLayer->getMatrix(&srcD, t);
-			// ADDED
 			double* data = srcD->getData();
 			int nnx = srcD->getDim("x");
 			int nny = srcD->getDim("y");
@@ -191,22 +178,8 @@ py::array_t<double> PLibForeFire::getDoubleArray(char* name, double t){
 				data
 			);
 			return arr;
-			// if (srcD != 0) {
-			// 	*outNI = srcD->getDim("x");
-			// 	*outNJ = srcD->getDim("y");
-			// 	*outNK = srcD->getDim("z");
-			// 	*outA =  srcD->getData();
-			// 	return;
-			// }
 		}
 
-		// *outNI = 0;
-		// *outNJ = 0;
-		// *outNK = 0;
-		// *outA =  NULL;
-		// return;
-
-		// ADDED
 		double* data = NULL;
 		py::array_t<double> arr = py::array_t<double>(
 			{0, 0, 0}, // shape
@@ -231,12 +204,29 @@ PYBIND11_MODULE(pyforefire, m) {
 		.def("setString", &PLibForeFire::setString)
 		.def("getString", &PLibForeFire::getString)
 		.def("execute", &PLibForeFire::execute)
-		.def("addScalarLayer", &PLibForeFire::addScalarLayer)
+		.def("addScalarLayer", [](PLibForeFire& self, char *type, char *name, double x0 , double y0, double t0, double width , double height, double timespan, py::array_t<int> values) {
+			size_t nn[] = {1,1,1,1};
+			const long* shape = values.shape();
+
+			for (ssize_t i = 0; i < values.ndim(); i += 1) {
+				nn[i] = (size_t)*shape;
+				std::cout << (size_t)*shape << std::endl;
+				++shape;
+			}
+
+			return self.addScalarLayer(type, name, x0, y0, t0, width, height, timespan, nn[0], nn[1], nn[2], nn[3], values);
+		})
 		.def("addIndexLayer", [](PLibForeFire& self, char *type, char *name, double x0 , double y0, double t0, double width , double height, double timespan, py::array_t<int> values) {
-			int nnx = values.shape()[0];
-			int nny = values.shape()[1];
-			int nnz = values.shape()[2];
-			return self.addIndexLayer(type, name, x0, y0, t0, width, height, timespan, nnx, nny, nnz, values);
+			size_t nn[] = {1,1,1,1};
+			const long* shape = values.shape();
+
+			for (ssize_t i = 0; i < values.ndim(); i += 1) {
+				nn[i] = (size_t)*shape;
+				std::cout << (size_t)*shape << std::endl;
+				++shape;
+			}
+
+			return self.addIndexLayer(type, name, x0, y0, t0, width, height, timespan, nn[0], nn[1], nn[2], nn[3], values);
 		})
 		.def("getDoubleArray", [](PLibForeFire& self, char* name) {
 			return self.getDoubleArray(name);
