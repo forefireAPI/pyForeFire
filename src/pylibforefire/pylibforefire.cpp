@@ -210,7 +210,6 @@ PYBIND11_MODULE(pyforefire, m) {
 
 			for (ssize_t i = 0; i < values.ndim(); i += 1) {
 				nn[i] = (size_t)*shape;
-				std::cout << (size_t)*shape << std::endl;
 				++shape;
 			}
 
@@ -222,7 +221,6 @@ PYBIND11_MODULE(pyforefire, m) {
 
 			for (ssize_t i = 0; i < values.ndim(); i += 1) {
 				nn[i] = (size_t)*shape;
-				std::cout << (size_t)*shape << std::endl;
 				++shape;
 			}
 
