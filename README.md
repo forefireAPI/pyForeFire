@@ -51,5 +51,12 @@ ff.execute(myCmd)
 OR
 
 ```bash
+cd test
 python test.py
 ```
+
+## Test pyForeFire
+
+A test folder is included inside this repository.<br>
+Each part of the code is gracefully commented, in case you want to reproduce this example.<br>
+A <i>fuels.ff</i> file is also included, feel free to modify it according to your needs.
