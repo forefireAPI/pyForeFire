@@ -153,12 +153,31 @@ py::array_t<double> PLibForeFire::getDoubleArray(char* name, double t){
 			int nnx = srcD->getDim("x");
 			int nny = srcD->getDim("y");
 			int nnz = srcD->getDim("z");
-			constexpr size_t stride_size = sizeof(double);
-			py::array_t<double> arr = py::array_t<double>(
-				{nnx, nny, nnz}, // shape
-            	{nnz*nny*stride_size, nnz*stride_size, stride_size},
-				data
-			);
+			int nnt = srcD->getDim("t");
+            constexpr size_t stride_size = sizeof(double);
+            size_t total_size = static_cast<size_t>(nnx) * nny * nnz * nnt;
+             
+             // Temporary vector to hold reshaped data
+             std::vector<double> reshaped_data(total_size);
+             
+             // Reshape data from C to Fortran order
+             for (int t = 0; t < nnt; ++t) {
+                 for (int z = 0; z < nnz; ++z) {
+                     for (int y = 0; y < nny; ++y) {
+                         for (int x = 0; x < nnx; ++x) {
+                             size_t c_index = x + nnx * (y + nny * (z + nnz * t)); // C order index
+                             size_t fortran_index = t + nnt * (z + nnz * (y + nny * x)); // Fortran order index
+                             reshaped_data[c_index] = data[fortran_index];
+                         }
+                     }
+                 }
+             }
+             
+             // Create py::array_t from the reshaped data
+             py::array_t<double> arr(
+                 {nnt, nnz, nny, nnx}, // shape as requested
+                 reshaped_data.data() // Now directly use reshaped data
+             );
 			return arr;
 		}
 
@@ -171,13 +190,36 @@ py::array_t<double> PLibForeFire::getDoubleArray(char* name, double t){
 			int nnx = srcD->getDim("x");
 			int nny = srcD->getDim("y");
 			int nnz = srcD->getDim("z");
-			constexpr size_t stride_size = sizeof(double);
-			py::array_t<double> arr = py::array_t<double>(
-				{nnx, nny, nnz}, // shape
-            	{nnz*nny*stride_size, nnz*stride_size, stride_size},
-				data
-			);
-			return arr;
+			int nnt = srcD->getDim("t");
+            constexpr size_t stride_size = sizeof(double);
+            size_t total_size = static_cast<size_t>(nnx) * nny * nnz * nnt;
+             
+             // Temporary vector to hold reshaped data
+             std::vector<double> reshaped_data(total_size);
+             
+             // Reshape data from C to Fortran order
+             for (int t = 0; t < nnt; ++t) {
+                 for (int z = 0; z < nnz; ++z) {
+                     for (int y = 0; y < nny; ++y) {
+                         for (int x = 0; x < nnx; ++x) {
+                             size_t c_index = x + nnx * (y + nny * (z + nnz * t)); // C order index
+                             size_t fortran_index = t + nnt * (z + nnz * (y + nny * x)); // Fortran order index
+                             reshaped_data[c_index] = data[fortran_index];
+                         }
+                     }
+                 }
+             }
+             
+             // Create py::array_t from the reshaped data
+             py::array_t<double> arr(
+                 {nnt, nnz, nny, nnx}, // shape as requested
+                 reshaped_data.data() // Now directly use reshaped data
+             );
+             
+             return arr;
+			
+			
+			
 		}
 
 		double* data = NULL;
@@ -204,29 +246,116 @@ PYBIND11_MODULE(pyforefire, m) {
 		.def("setString", &PLibForeFire::setString)
 		.def("getString", &PLibForeFire::getString)
 		.def("execute", &PLibForeFire::execute)
-		.def("addScalarLayer", [](PLibForeFire& self, char *type, char *name, double x0 , double y0, double t0, double width , double height, double timespan, py::array_t<int> values) {
-			size_t nn[] = {1,1,1,1};
-			const long* shape = values.shape();
-
-			for (ssize_t i = 0; i < values.ndim(); i += 1) {
-				nn[i] = (size_t)*shape;
-				++shape;
-			}
-
-			return self.addScalarLayer(type, name, x0, y0, t0, width, height, timespan, nn[0], nn[1], nn[2], nn[3], values);
+		.def("addScalarLayer", [](PLibForeFire& self, char *type, char *name, double x0 , double y0, double t0, double width , double height, double timespan, py::array_t<double> values) {
+            size_t nn[] = {1, 1, 1, 1};
+            const long* shape = values.shape();
+        
+            for (ssize_t i = 0; i < values.ndim(); i += 1) {
+                nn[i] = (size_t)*shape;
+                ++shape;
+            }
+        
+            // Assuming nn contains the dimensions in Fortran (column-major) order
+            size_t nx = nn[3], ny = nn[2], nz = nn[1], nnt = nn[0];
+            size_t size = nnt * nz * ny * nx;
+            auto dataC = std::vector<double>(size); // C-style array
+        
+            auto r = values.unchecked<4>(); // Assuming values is a 4D array; use unchecked for read-only access
+        
+            for (size_t ll = 0; ll < nnt; ++ll) {
+                for (size_t kk = 0; kk < nz; ++kk) {
+                    for (size_t jj = 0; jj < ny; ++jj) {
+                        for (size_t ii = 0; ii < nx; ++ii) {
+                            // Convert Fortran index to C index on the fly
+                            size_t indF = ll * (nx * ny * nz) + kk * (nx * ny) + jj * nx + ii;
+                            size_t indC = ii * (ny * nz * nnt) + jj * (nz * nnt) + kk * nnt + ll;
+        
+                            // No temporary array; direct assignment
+                            dataC[indC] = r(ll, kk, jj, ii); // Use the indices according to Fortran order in r()
+                        }
+                    }
+                }
+            }
+        
+            // Pass the reshaped data to the original addIndexLayer function
+            // Need to convert dataC back to a format that addIndexLayer expects (e.g., py::array)
+            py::array_t<double> dataC_py = py::array(size, dataC.data());
+            return self.addScalarLayer(type, name, x0, y0, t0, width, height, timespan, nx, ny, nz, nnt, dataC_py);
+                                                                                        
+ 
 		})
 		.def("addIndexLayer", [](PLibForeFire& self, char *type, char *name, double x0 , double y0, double t0, double width , double height, double timespan, py::array_t<int> values) {
-			size_t nn[] = {1,1,1,1};
-			const long* shape = values.shape();
+            size_t nn[] = {1, 1, 1, 1};
+            const long* shape = values.shape();
+        
+            for (ssize_t i = 0; i < values.ndim(); i += 1) {
+                nn[i] = (size_t)*shape;
+                ++shape;
+            }
+        
+            // Assuming nn contains the dimensions in Fortran (column-major) order
+            size_t nx = nn[3], ny = nn[2], nz = nn[1], nnt = nn[0];
+            size_t size = nnt * nz * ny * nx;
+            auto dataC = std::vector<int>(size); // C-style array
+        
+            auto r = values.unchecked<4>(); // Assuming values is a 4D array; use unchecked for read-only access
+        
+            for (size_t ll = 0; ll < nnt; ++ll) {
+                for (size_t kk = 0; kk < nz; ++kk) {
+                    for (size_t jj = 0; jj < ny; ++jj) {
+                        for (size_t ii = 0; ii < nx; ++ii) {
+                            // Convert Fortran index to C index on the fly
+                            size_t indF = ll * (nx * ny * nz) + kk * (nx * ny) + jj * nx + ii;
+                            size_t indC = ii * (ny * nz * nnt) + jj * (nz * nnt) + kk * nnt + ll;
+        
+                            // No temporary array; direct assignment
+                            dataC[indC] = r(ll, kk, jj, ii); // Use the indices according to Fortran order in r()
+                        }
+                    }
+                }
+            }
+        
+            // Pass the reshaped data to the original addIndexLayer function
+            // Need to convert dataC back to a format that addIndexLayer expects (e.g., py::array)
+            py::array_t<int> dataC_py = py::array(size, dataC.data());
+            return self.addIndexLayer(type, name, x0, y0, t0, width, height, timespan, nx, ny, nz, nnt, dataC_py);
 
-			for (ssize_t i = 0; i < values.ndim(); i += 1) {
-				nn[i] = (size_t)*shape;
-				++shape;
-			}
-
-			return self.addIndexLayer(type, name, x0, y0, t0, width, height, timespan, nn[0], nn[1], nn[2], nn[3], values);
 		})
 		.def("getDoubleArray", [](PLibForeFire& self, char* name) {
 			return self.getDoubleArray(name);
-		});
+		})
+		.def("__setitem__", [](PLibForeFire &self, const std::string &key, py::object value) {
+            if (py::isinstance<py::int_>(value)) {
+                // Integer value
+                self.setInt(const_cast<char*>(key.c_str()), value.cast<int>());
+            } else if (py::isinstance<py::float_>(value)) {
+                // Double value
+                self.setDouble(const_cast<char*>(key.c_str()), value.cast<double>());
+            } else if (py::isinstance<py::str>(value)) {
+                // String value
+                std::string val = value.cast<std::string>();
+                self.setString(const_cast<char*>(key.c_str()), const_cast<char*>(val.c_str()));
+            } else {
+                throw std::runtime_error("Unsupported value type");
+            }
+        })
+        .def("__getitem__", [&](PLibForeFire &self, const std::string &key) -> py::object {
+            // This example assumes that you can somehow determine the type of the parameter
+            // beforehand, which might require additional logic in your C++ code that's not
+            // shown here.
+
+            // Placeholder for type checking. You need to implement actual type determination logic.
+            // For demonstration, this code assumes everything is treated as a string for retrieval.
+
+            // Attempt to get a string, and if it fails, fall back to double, then int.
+            try {
+                return py::cast(self.getString(const_cast<char*>(key.c_str())));
+            } catch (...) {
+                try {
+                    return py::cast(self.getDouble(const_cast<char*>(key.c_str())));
+                } catch (...) {
+                    return py::cast(self.getInt(const_cast<char*>(key.c_str())));
+                }
+            }
+        });
 }
