@@ -5,6 +5,7 @@ import matplotlib.patches as mpatches
 
 import pyforefire as forefire
 
+from forefire_helper import *
 
 ## Simulation Parameters ##
 nb_steps = 5                    # The number of step the simulation will execute
@@ -15,218 +16,17 @@ fuel_file_path = './fuels.ff'   # The path of fuel file
 fuel_list = [73, 75, 82, 83, 102, 103, 104, 105, 106] # The list of used fuels
 
 
-# Functions definitions
-def get_sub_domain_indices_from_location(x, y, originX, originY, domain_width, domain_height, shape_multisim):
-    """
-    Used for retrieve indices of coordinates inside simulation matrix
-    """
-    i = np.floor(((x - originX) / domain_width) * shape_multisim[0])
-    j = np.floor(((y - originY) / domain_height) * shape_multisim[1])
-    return int(i), int(j)
-
-def maxDiff(a):
-    """
-    Used for get the maximum difference along first axis of an array
-    """
-    vmin = a[0]
-    dmax = 0
-    for i in range(len(a)):
-        if (a[i] < vmin):
-            vmin = a[i]
-        elif (a[i] - vmin > dmax):
-            dmax = a[i] - vmin
-    return dmax
-
-def genAltitudeMap(slope_coef, sub_sim_shape, data_resolution):
-    """
-    Generate a matrix of altitudes given a slope coefficient
-    """
-    slope = np.linspace(0, 1, sub_sim_shape[1])
-    slope = np.repeat(slope, sub_sim_shape[0])
-    slope = slope.reshape(sub_sim_shape[1], sub_sim_shape[0]).T
-    return slope * slope_coef * (data_resolution / 5)
-
-
-def map_fuel_to_colors(fuelmap, fuel_list):
-    """
-    Convert a fuel_map for use with colors.
-    The returned fuel_map values are replaced by indices of fuels from fuel_list.
-    """
-    for i in range(len(fuelmap)):
-        for j in range(len(fuelmap[0])):
-            try:
-                fuelmap[i][j] = fuel_list.index(fuelmap[i][j]) + 1
-            except ValueError:
-                fuelmap[i][j] = 0
-    return fuelmap
-
-
-def getLocationFromLine(line):
-    """
-    Return the location of current node (line).
-    """
-    llv = line.split("loc=(")
-    if len(llv) < 2: 
-        return None
-    llr = llv[1].split(",")
-    if len(llr) < 3: 
-        return None
-    return (float(llr[0]),float(llr[1]))
-
-
-def printToPathe(linePrinted):
-    """
-    Compute the current results of simulation to pathes.
-    """
-    fronts = linePrinted.split("FireFront")
-    pathes = []
-    for front in fronts[1:]:
-        nodes = front.split("FireNode")[1:]
-        if len(nodes) > 0:
-            Path = mpath.Path
-            codes = []
-            verts = []
-            firstNode = getLocationFromLine(nodes[0])
-            codes.append(Path.MOVETO)
-            verts.append(firstNode)
-
-            for node in nodes[:]:
-                newNode = getLocationFromLine(node)
-                codes.append(Path.LINETO)
-                verts.append(newNode)
-            codes.append(Path.LINETO)
-            verts.append(firstNode)
-            pathes.append(mpath.Path(verts, codes))
-
-    return pathes
-
-
-def plot_simulation(ff, pathes, fuel_map, fuel_list, altitude_map, domain_width, domain_height, sim_params, shape_multisim):
-    """
-    Used for plot 4 axis graph, with Heatflux, Fuels, Altitude plotted under simulation, 
-    and Statistics for the last axis.
-    """
-    # Create a figure with 4 axis (4 subplots)
-    _, axes = plt.subplots(ncols=2, nrows=2, figsize=(10,7), dpi=120)
-
-    # Get heatflux matrix
-    heatFlux = np.transpose(ff.getDoubleArray("heatFluxBasic"))[0]
-
-    # Get fuel_map matrix
-    fuels = np.transpose(fuel_map.reshape(fuel_map.shape[0], fuel_map.shape[1], 1))[0]
-    fuels = map_fuel_to_colors(fuels, fuel_list) # Convert fuels indices to colors
-
-    # Get altitude matrix
-    altitude = np.transpose(altitude_map.reshape(altitude_map.shape[0], altitude_map.shape[1], 1))[0]
-
-    # Plot Heatflux
-    CS = axes[0][0].imshow(heatFlux, cmap=plt.cm.gray, interpolation='nearest', origin='lower', extent=(0,domain_width,0,domain_height))
-    plt.colorbar(CS)
-
-    # Plot Fuels
-    CS = axes[0][1].imshow(fuels, cmap=plt.cm.tab10, interpolation='nearest', origin='lower', extent=(0,domain_width,0,domain_height))
-    plt.colorbar(CS)
-
-    # Plot Altitude
-    CS = axes[1][0].imshow(altitude, cmap=plt.cm.terrain, interpolation='nearest', origin='lower', extent=(0,domain_width,0,domain_height))
-    plt.colorbar(CS)
-
-    # Plot current firefronts to the first 3 subplots
-    for ax in axes.reshape(4)[:3]:
-        for path in pathes:
-            patch = mpatches.PathPatch(path, edgecolor='red', facecolor='none', alpha=1)
-            ax.add_patch(patch)
-            ax.grid()
-            ax.axis('equal')
-
-    # This axe is used for stats
-    ax = axes[1][1]
-
-    # Get the max speed for each sub simulation
-    speeds = [max(param['speeds'][0]) for params in sim_params for param in params]
-    speeds = np.array(speeds).reshape(shape_multisim)
-
-    # Get the slope for each sub simulation
-    slopes = [param['slope'] for params in sim_params for param in params]
-    slopes = np.array(slopes).reshape(shape_multisim)
-
-    # Get the fuel used for each sub simulation
-    fuels = [param['fuel'] for params in sim_params for param in params]
-    fuels = np.array(fuels).reshape(shape_multisim)
-
-    color_map = [
-        'orange',
-        'blue',
-        'green',
-        'red',
-        'yellow'
-    ] * 2 # Using * 2 for generate a bigger array, but values (colors) are repeated
-
-    # Plot speeds based on slopes
-    for x, fuel in enumerate(fuel_list):
-        ax.scatter(slopes[x], speeds[x], linewidths=1, alpha=.7,
-                    edgecolor='k', label=fuel, s=50, c=color_map[x])
-
-    # Set some plot params and show it
-    ax.grid()
-    ax.set_xlabel('Slope')
-    ax.set_ylabel('Speed')
-    ax.legend()
-    plt.show()
-
-
-
-# Initialize pyforefire module
-ff = forefire.ForeFire()
-
-# Set advanced simulation parameters
-ff.setString("ForeFireDataDirectory", ".")
-ff.setString("fuelsTableFile", fuel_file_path)
-ff.setDouble("spatialIncrement",1)
-ff.setDouble("minimalPropagativeFrontDepth",20)
-ff.setDouble("perimeterResolution",10)
-ff.setInt("atmoNX", 100)
-ff.setInt("atmoNY", 100)
-ff.setDouble("initialFrontDepth",5)
-ff.setDouble("relax",.1)
-ff.setDouble("smoothing",100)
-ff.setDouble("z0",0.)
-ff.setDouble("windU", windU) # Horizontal
-ff.setDouble("windV", windV) # Vertical
-ff.setInt("defaultFuelType",1)
-ff.setInt("bmapLayer",1)
-ff.setInt("defaultHeatType",0)
-ff.setDouble("nominalHeatFlux",100000)
-ff.setDouble("burningDuration",100)
-ff.setDouble("maxFrontDepth",50)
-ff.setDouble("minSpeed",0.0000)
-
-# data_resolution (in meters)
 data_resolution = 100
-# size of sub_sim (each independant sub simulation)
-sub_sim_shape = (30,20)
-# size of the wall (barrier between each independant simulations)
+sub_sim_shape = (20,20)
 wall_size = min(sub_sim_shape) // 10
-# test with slopes from 0 to 80% step 20%
 slopes = range(0,100,20)
+
 shape_multisim = (len(fuel_list),len(slopes))
-# total size of sim
-sim_shape = (sub_sim_shape[0]*shape_multisim[0], sub_sim_shape[1]*shape_multisim[1])
-# domain_width & domain_height
-domain_width = sim_shape[0] * data_resolution
+sim_shape = (1,1,sub_sim_shape[0]*shape_multisim[0], sub_sim_shape[1]*shape_multisim[1])
 domain_height = sim_shape[1] * data_resolution
+domain_width = sim_shape[0] * data_resolution
 
-# Create a FireDomain
-# NOTE: FireDomain use meters as values
-ff.execute("FireDomain[sw=(0.,0.,0.);ne=(%i,%i,0.);t=0.]" % (domain_width, domain_height))
 
-# Add the required Forefire layers
-ff.addLayer("data","altitude","z0")
-ff.addLayer("data","windU","windU")
-ff.addLayer("data","windV","windV")
-ff.addLayer("BRatio","BRatio","BRatio")
-ff.addLayer("flux","heatFluxBasic","defaultHeatType")
-ff.addLayer("propagation","Rothermel","propagationModel")
 
 # Init fuel_map and altitude_map with zeros
 fuel_map = np.zeros(sim_shape)
@@ -241,7 +41,7 @@ for fuel_index in range(shape_multisim[0]):
         s0 = slice(fuel_index * sub_sim_shape[0] + wall_size, (fuel_index+1) * sub_sim_shape[0] - wall_size)
         s1 = slice(slope_index * sub_sim_shape[1] + wall_size, (slope_index+1) * sub_sim_shape[1] - wall_size)
         # Assign the corresponding fuel to fuel_map
-        fuel_map[s0,s1] = fuel_list[fuel_index]
+        fuel_map[0,0,s0,s1] = fuel_list[fuel_index]
 
         # Compute slices used for set this row of altitude
         s0 = slice(fuel_index * sub_sim_shape[0], (fuel_index+1) * sub_sim_shape[0])
@@ -249,7 +49,7 @@ for fuel_index in range(shape_multisim[0]):
         # Generate altitude_map with all the slops
         altMap = genAltitudeMap(slopes[slope_index], sub_sim_shape, data_resolution)
         # Assign the corresponding slopes to altitude_map
-        altitude_map[s0,s1] = altMap
+        altitude_map[0,0,s0,s1] = altMap
 
         # Compute ignition point
         ii = (((fuel_index+1) * sub_sim_shape[0]) + (fuel_index * sub_sim_shape[0])) // 2
@@ -272,9 +72,6 @@ for fuel_index in range(shape_multisim[0]):
 # Add the fuel_map and altitude_map to the firefront layers
 ff.addIndexLayer("table", "fuel", 0, 0, 0, domain_width, domain_height, 0, fuel_map)
 ff.addScalarLayer("table", "altitude", 0, 0, 0, domain_width, domain_height, 0, altitude_map)
-
-# Start the simulation at timestep 0
-ff.execute("\tFireFront[t=0.]")
 
 # Start ignitions with previoulsy computed ignitions points
 for fuel_index in range(shape_multisim[0]):
@@ -335,6 +132,53 @@ for fuel_index in range(len(sim_params)):
         speedY = max((end_point[1] - start_point[1]) / sim_params[fuel_index][slope_index]['pathes_time'])
 
         sim_params[fuel_index][slope_index]['speeds'].append((speedX, speedY))
+
+
+
+# Initialize pyforefire module
+ff = forefire.ForeFire()
+ff.setString("ForeFireDataDirectory", ".")
+ff.setString("fuelsTableFile", fuel_file_path)
+ff.setDouble("spatialIncrement",1)
+ff.setDouble("minimalPropagativeFrontDepth",20)
+ff.setDouble("perimeterResolution",10)
+ff.setInt("atmoNX", 100)
+ff.setInt("atmoNY", 100)
+ff.setDouble("initialFrontDepth",5)
+ff.setDouble("relax",.1)
+ff.setDouble("smoothing",100)
+ff.setDouble("z0",0.)
+ff.setDouble("windU", windU) # Horizontal
+ff.setDouble("windV", windV) # Vertical
+ff.setInt("defaultFuelType",1)
+ff.setInt("bmapLayer",1)
+ff.setInt("defaultHeatType",0)
+ff.setDouble("nominalHeatFlux",100000)
+ff.setDouble("burningDuration",100)
+ff.setDouble("maxFrontDepth",50)
+ff.setDouble("minSpeed",0.0000)
+ff["SWx"] = 0.
+ff["SWy"] = 0.
+ff["Lx"] = domain_width
+ff["Ly"] = domain_height
+
+domain_string = f'FireDomain[sw=({ff["SWx"]},{ff["SWy"]},0);ne=({ff["SWx"] + ff["Lx"]},{ff["SWy"] + ff["Ly"]},0);t=0]'
+ff.execute(domain_string)
+
+# Add the required Forefire layers
+ff.addLayer("data","altitude","z0")
+ff.addLayer("data","windU","windU")
+ff.addLayer("data","windV","windV")
+ff.addLayer("BRatio","BRatio","BRatio")
+ff.addLayer("flux","heatFluxBasic","defaultHeatType")
+ff.addLayer("propagation","Rothermel","propagationModel")
+
+
+
+
+
+
+
 
 
 # Finally, plot simulations and show stats

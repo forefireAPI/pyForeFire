@@ -4,7 +4,7 @@ import matplotlib.path as mpath
 import matplotlib.patches as mpatches
 
 import pyforefire as forefire
-
+from forefire_helper import *
 
 ## Simulation Parameters ##
 nb_steps = 5                    # The number of step the simulation will execute
@@ -13,83 +13,6 @@ windU = 0                       # The Horizontal wind
 windV = 0                       # The Vertical wind
 fuel_file_path = './fuels.ff'   # The path of fuel file
 fuel_type = 103                 # The type of used fuel
-
-# Functions definitions
-def get_sub_domain_indices_from_location(x, y, originX, originY, domain_width, domain_height):
-    """
-    Used for retrieve indices of coordinates inside simulation matrix
-    """
-    i = np.floor(((x - originX) / domain_width))
-    j = np.floor(((y - originY) / domain_height))
-    return int(i), int(j)
-
-def maxDiff(a):
-    """
-    Used for get the maximum difference along first axis of an array
-    """
-    vmin = a[0]
-    dmax = 0
-    for i in range(len(a)):
-        if (a[i] < vmin):
-            vmin = a[i]
-        elif (a[i] - vmin > dmax):
-            dmax = a[i] - vmin
-    return dmax
-
-def getLocationFromLine(line):
-    """
-    Return the location of current node (line).
-    """
-    llv = line.split("loc=(")
-    if len(llv) < 2: 
-        return None
-    llr = llv[1].split(",")
-    if len(llr) < 3: 
-        return None
-    return (float(llr[0]),float(llr[1]))
-
-def printToPathe(linePrinted):
-    """
-    Compute the current results of simulation to pathes.
-    """
-    fronts = linePrinted.split("FireFront")
-    pathes = []
-    for front in fronts[1:]:
-        nodes = front.split("FireNode")[1:]
-        if len(nodes) > 0:
-            Path = mpath.Path
-            codes = []
-            verts = []
-            firstNode = getLocationFromLine(nodes[0])
-            codes.append(Path.MOVETO)
-            verts.append(firstNode)
-
-            for node in nodes[:]:
-                newNode = getLocationFromLine(node)
-                codes.append(Path.LINETO)
-                verts.append(newNode)
-            codes.append(Path.LINETO)
-            verts.append(firstNode)
-            pathes.append(mpath.Path(verts, codes))
-
-    return pathes
-
-def plot_simulation(ff, pathes, fuel_map, altitude_map, domain_width, domain_height, sim_shape):
-    """
-    Used for plot 4 axis graph, with Heatflux, Fuels, Altitude plotted under simulation, 
-    and Statistics for the last axis.
-    """
-    # Create a figure with 4 axis (4 subplots)
-    fig, ax = plt.subplots(figsize=(10,7), dpi=120)
-
-    # Plot current firefronts to the first 3 subplots
-    for path in pathes:
-        patch = mpatches.PathPatch(path, edgecolor='red', facecolor='none', alpha=1)
-        ax.add_patch(patch)
-        ax.grid()
-        ax.axis('equal')
-
-    plt.show()
 
 
 # Initialize pyforefire module
@@ -122,12 +45,18 @@ data_resolution = 1
 # total size of sim
 sim_shape = (1000, 1000)
 # domain_width & domain_height
-domain_width = sim_shape[0]
-domain_height = sim_shape[1]
+domain_height = sim_shape[0]
+domain_width = sim_shape[1]
 
-# Create a FireDomain
-# NOTE: FireDomain use meters as values
-ff.execute("FireDomain[sw=(0.,0.,0.);ne=(%i,%i,0.);t=0.]" % (domain_width, domain_height))
+ff["SWx"] = 0.
+ff["SWy"] = 0.
+ff["Lx"] = domain_width
+ff["Ly"] = domain_height
+
+    
+domain_string = f'FireDomain[sw=({ff["SWx"]},{ff["SWy"]},0);ne=({ff["SWx"] + ff["Lx"]},{ff["SWy"] + ff["Ly"]},0);t=0]'
+print(domain_string)
+ff.execute(domain_string)
 
 # Add the required Forefire layers
 ff.addLayer("data","altitude","z0")
@@ -138,9 +67,9 @@ ff.addLayer("flux","heatFluxBasic","defaultHeatType")
 ff.addLayer("propagation","Rothermel","propagationModel")
 
 # Init fuel_map and altitude_map with zeros
-fuel_map = np.zeros(sim_shape)
+fuel_map = np.zeros((1, 1) + sim_shape)
 fuel_map.fill(fuel_type)
-altitude_map = np.zeros(sim_shape)
+altitude_map = np.zeros((1, 1) + sim_shape)
 
 # Create a list to save simulation params
 sim_params = np.zeros(sim_shape).tolist()
@@ -195,6 +124,7 @@ for i in range(1, nb_steps+1):
         # Keyboard interrupt in case simulation take a while and we want to show current state of simulation
         break
 
+ffplotExtents =(float(ff["SWx"]),float(ff["SWx"]) + float(ff["Lx"]),float(ff["SWy"]),float(ff["SWy"]) + float(ff["Ly"]))
 
-# Finally, plot simulations and show stats
-plot_simulation(ff, pathes, fuel_map, altitude_map, domain_width, domain_height, sim_shape)
+plot_simulation(pathes,ff.getDoubleArray("fuel")[0,0,:,:] ,ff.getDoubleArray("altitude")[0,0,:,:],  ffplotExtents ,scalMap=ff.getDoubleArray("BMap")[0,0,:,:])
+
