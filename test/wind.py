@@ -11,9 +11,7 @@ import time
 
 from forefire_helper import *
 
-
-#landscape_file_path = "/Users/filippi_j/soft/pyForeFire/test/sample8DIRwind.nc"
-landscape_file_path = "/Users/filippi_j/soft/pyForeFire/test/sampleUVCoeffLandscape.nc"
+landscape_file_path = "sampleUVCoeffLandscape.nc"
 
 ff = forefire.ForeFire()
  
