@@ -56,6 +56,14 @@ def standardRothermelFuelTable():
 522;500.0;500.0;0.13;0.5;2400.0;5700.0;0;0.6;1.28;8.3;1.0;300.0;70000.0;2300000.0;1.5E7;1800.0;1000.0;600.0;0.3;2.5E-5;4.0;0.3
 523;500.0;500.0;0.13;0.5;2400.0;5700.0;0;0.6;1.28;8.3;1.0;300.0;70000.0;2300000.0;1.5E7;1800.0;1000.0;600.0;0.3;2.5E-5;4.0;0.3"""
 
+def testAnnFuelTable():
+    return """Index;Rhod;sd;Ta
+0;0.24;0.68;0.097
+1;0.95;0.73;0.44
+2;0.82;0.36;0.050
+3;0.77;0.11;0.05
+4;0.50;0.92;0.22"""
+
 def genAltitudeMap(slope_coef, sub_sim_shape, data_resolution):
     """
     Generate a matrix of altitudes given a slope coefficient
@@ -65,7 +73,16 @@ def genAltitudeMap(slope_coef, sub_sim_shape, data_resolution):
     slope = slope.reshape(sub_sim_shape[1], sub_sim_shape[0]).T
     return slope * slope_coef * (data_resolution / 5)
 
-# Functions definitions
+#  Functions definitions
+
+def get_multi_sub_domain_indices_from_location(x, y, originX, originY, domain_width, domain_height, shape_multisim):
+    """
+    Used for retrieve indices of coordinates inside simulation matrix
+    """
+    i = np.floor(((x - originX) / domain_width) * shape_multisim[0])
+    j = np.floor(((y - originY) / domain_height) * shape_multisim[1])
+    return int(i), int(j)
+
 def get_sub_domain_indices_from_location(x, y, originX, originY, domain_width, domain_height):
     """
     Used for retrieve indices of coordinates inside simulation matrix
