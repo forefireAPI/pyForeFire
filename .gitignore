@@ -21,3 +21,5 @@ pybind11*
 pyforefire-*
 wheelhouse
 pyforefire.egg-info
+
+*__pycache__/*
