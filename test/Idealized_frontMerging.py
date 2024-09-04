@@ -10,9 +10,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.path as mpath
 import matplotlib.patches as mpatches
+import seaborn as sns
 import math as m
 import pyforefire as forefire
-from forefire_helper import printToPathe
+from forefire_helper import *
+
 ###############################################################################
 ##:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #                    IDEALIZED TEST CASE FRONT MERGING
@@ -44,7 +46,7 @@ from forefire_helper import printToPathe
 ##-----------------------------------------------------------------------------
 ##  Routine for plotting
 ##-----------------------------------------------------------------------------
-def plot_test(pathes, myExtents):
+def plot_test(pathes, fuel_map):
     """
     Used for plot 4 axis graph, with Heatflux, Fuels, Altitude plotted under simulation, 
     and Statistics for the last axis.
@@ -54,9 +56,12 @@ def plot_test(pathes, myExtents):
 
     path_colors = ['red', 'orange', 'yellow', 'white']
 
+    colors = sns.color_palette("flare", n_colors=len(pathes))
+
     # Plot current firefronts to the first 3 subplots
+    plt.imshow(fuel_map[0, 0], alpha=0.25)
     for p, path in enumerate(pathes):
-        patch = mpatches.PathPatch(path, edgecolor="Red", facecolor='none', alpha=1, lw=2)
+        patch = mpatches.PathPatch(path, edgecolor=colors[p], facecolor='none', alpha=1, lw=2)
         ax.add_patch(patch)
         ax.grid()
         ax.axis('equal')
@@ -69,7 +74,8 @@ def plot_test(pathes, myExtents):
 ##-----------------------------------------------------------------------------
 def VVCoeffTable():
     return """Index;vv_coeff
-1;2.0"""
+1;2.0
+2;10.0"""
 
 ##-----------------------------------------------------------------------------
 ##  Simulation parameters and settings ##
@@ -82,8 +88,10 @@ fuel_type = 1               # The type of used fuel by default (Index in VVCoeff
 ff = forefire.ForeFire()
 
 ##  Fuel settings
-ff["fuelsTable"] = VVCoeffTable()
-ff["defaultFuelType"]=1.
+# ff["fuelsTable"] = VVCoeffTable()
+# ff["defaultFuelType"]=1.
+ff["fuelsTable"] = standardRothermelFuelTable()
+
 ##  ForeFire settings
 ff["spatialIncrement"]=1.
 ff["minimalPropagativeFrontDepth"]=1
@@ -93,9 +101,14 @@ ff["relax"]=1.
 ff["smoothing"]=100
 ff["minSpeed"]=0.000
 ff["bmapLayer"]=1
+ff["windU"]=20.0 # Horizontal
+ff["windV"]=20.0 # Vertical
+ff["FFANNPropagationModelPath"] = "/home/ai4geo/Documents/nn_ros_models/nn_Rothermel1972.ffann"
 ##  Propagation model settings
-ff["speed_module"]=1  ## spreading velocity (meters seconds-1)
-ff["propagationModel"] = "IsotropicFuel"
+# ff["speed_module"]=1  ## spreading velocity (meters seconds-1)
+# ff["propagationModel"] = "IsotropicFuel"
+# ff["propagationModel"] = "Rothermel"
+
 
 ## Total size of simulation domain (meters)
 sim_shape = (2000, 2000)
@@ -108,8 +121,8 @@ ff["Lx"] = domain_width
 ff["Ly"] = domain_height
 
 # Init fuel_map matrix
-fuel_map = np.zeros((1, 1) + sim_shape)
-fuel_map.fill(fuel_type)
+fuel_map = 141 * np.ones((1, 1) + sim_shape)
+# fuel_map[:, :, :domain_height // 1, :domain_width // 2] = 112
 
 ## Shape of the initial front is defined by points corrdinates below
 side1=1800  #length of outer side
@@ -131,12 +144,18 @@ xp12,yp12 = pointxcenter+side1/2, pointycenter -side1/2
 ##-----------------------------------------------------------------------------
 ##  SIMULATION STARTS
 ##-----------------------------------------------------------------------------       
+import pdb; pdb.set_trace()
+
 domain_string = f'FireDomain[sw=({ff["SWx"]},{ff["SWy"]},0);ne=({ff["SWx"] + ff["Lx"]},{ff["SWy"] + ff["Ly"]},0);t=0]'
 ff.execute(domain_string)
 
 # Add the required Forefire layers
 ff.addLayer("BRatio","BRatio","BRatio")  ## Time of arrival matrix 
-ff.addLayer("propagation",ff["propagationModel"],"propagationModel")  ## Propagation model 
+# ff.addLayer("propagation",ff["propagationModel"],"propagationModel")  ## Propagation model 
+ff.addLayer("propagation","ANNPropagationModel","propagationModel")
+
+ff.addLayer("data","windU","windU")
+ff.addLayer("data","windV","windV") #wind layers
 ff.addIndexLayer("table", "fuel", float(ff["SWx"]), float(ff["SWy"]), 0, domain_width, domain_height, 0, fuel_map) ## Fuel map layer
 
 ##  front orentation is clockwise!!
@@ -184,4 +203,4 @@ for i in range(1, nb_steps+1):
 ##   Plot the simulated Fronts
 ##-----------------------------------------------------------------------------
 ffplotExtents =(float(ff["SWx"]),float(ff["SWx"]) + float(ff["Lx"]),float(ff["SWy"]),float(ff["SWy"]) + float(ff["Ly"]))
-plot_test(pathes,ffplotExtents)
+plot_test(pathes,fuel_map)
