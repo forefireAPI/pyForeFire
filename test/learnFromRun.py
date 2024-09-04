@@ -9,11 +9,13 @@ import pyforefire as forefire
 from datetime import datetime
 import time
 import pandas as pd
-
+import sys
 import tensorflow as tf
 from forefire_helper import *
 from forefire_TF_helpers import *
+from sklearn.metrics import mean_squared_error
 
+from keras.callbacks import EarlyStopping
 # All you need to do a propagation model / simulation emulation
 # Keep in mind the emulator will be somehow linked to the numerical model in use
 # you have to run this script 3 times for the 3 phases, each time go to next phase
@@ -32,7 +34,22 @@ phaseUseANNROSandCompare = 3
 #6 compare original simulations with the first run
 
 # SET THE PHASE HERE runwith 1, then 2, then 3
-phase = phaseUseANNROSandCompare
+phase = phaseRunForANN
+
+
+# Check if a command line argument was provided
+if len(sys.argv) > 1:
+    try:
+        # Attempt to convert the first argument to an integer and set it as the phase
+        phase = int(sys.argv[1])
+        if phase not in [phaseRunForANN, phaseMakeDBandRun, phaseUseANNROSandCompare]:
+            raise ValueError("Invalid phase number")
+    except ValueError as e:
+        # If there is an error (not an integer or invalid phase number), print a warning and exit
+        print(f"Error: {e}\nPlease provide a valid phase number (1, 2, or 3).")
+        sys.exit(1)
+
+
 
 print(f"Hello !! making some fire model emulation\n Running phase {phase} over 3")
 
@@ -47,6 +64,7 @@ ff["spatialIncrement"] = 3
 ff["perimeterResolution"] = 10
 ff["minimalPropagativeFrontDepth"] = 40
 ff["minSpeed"] = 0.0
+ff["maxSpeed"] = 20.0
 ff["relax"] = 1
 ff["propagationSpeedAdjustmentFactor"] = 1
 ff["windReductionFactor"]=1
@@ -80,21 +98,23 @@ if phase == phaseMakeDBandRun:
     
 ff.execute("startFire[loc=(506666,4625385,0);t=0]")
 ff.execute("startFire[loc=(506666,4614485,0);t=0]")
+ff.execute("startFire[loc=(526666,4644485,0);t=0]")
 ff.execute("startFire[loc=(480666,4615385,0);t=0]")
 start_time = time.time()
 
 pathes = []
 
-nb_steps = 5  # The number of steps the simulation will execute
-step_size = 360  # The duration (in seconds) between each step
-angle_deg = 30.0  # The angle by which to rotate the vector at each step
+nb_steps = 15  # The number of steps the simulation will execute
+step_size = 120  # The duration (in seconds) between each step
+angle_deg = 40.0  # The angle by which to rotate the vector at each step
 norm = 20  # The norm of the vector
 
+print("Starting simulation")
 for i in range(nb_steps):
     rotation_angle_rad = math.radians(i * angle_deg)
     herex = norm * math.cos(rotation_angle_rad)
     herey = norm * math.sin(rotation_angle_rad)
-    angle_deg = angle_deg-(0.5)
+    angle_deg = angle_deg-(5)
     try:
         new_out = ff.execute("print[]")
         newPathes = printToPathe(new_out)
@@ -115,14 +135,32 @@ at=None
 if phase == phaseRunForANN:
     ff.execute("save[]")
     input_names=ff[initialPropagationModel+".keys"].split(";")
+    output_names=["ROS",]
+    num_samples = 10
     input_size = len(input_names)
+    output_size = len(output_names)
+    print(initialPropagationModel, " keys :", input_names, input_size, output_size)
+    
+    # Generate random inputs for the model
+    inputs = np.random.rand(num_samples, input_size).astype(np.float32)
+    
+    # Define the Normalization layers - Set axis=-1 to normalize per feature
+    input_normalizer = tf.keras.layers.Normalization(axis=-1)
+    
+    # Adapt normalizers to the dataset
+    input_normalizer.adapt(inputs)
+    
+    mean = input_normalizer.mean.numpy()
+    variance = input_normalizer.variance.numpy()
+    
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(32, input_shape=(len(input_names),), activation='relu'),
-        tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dense(1, activation='linear', name='output')
+        input_normalizer,                              # Normalize inputs
+        tf.keras.layers.Dense(256, activation='relu', input_shape=(input_size,)),  # Set input_shape explicitly
+        tf.keras.layers.Dense(128, activation='relu'),  # Third dense layer
+        tf.keras.layers.Dense(len(output_names))        # Final output layer
     ])
-    save_model_structure(model, ff["FFANNPropagationModelPath"], input_names=input_names, output_names=["ROS"])
+    
+    save_model_structure(model, ff["FFANNPropagationModelPath"], input_names=input_names, output_names=output_names)
     at=ff.getDoubleArray("BMap")[0,0,:,:]
 else:
     lcp = xr.open_dataset(at_file_path)   
@@ -136,7 +174,7 @@ if phase == phaseMakeDBandRun:
     data = pd.read_csv(ff["FFBMapLoggerCSVPath"] , delimiter=';')  # Adjust delimiter if necessary
     
     
-    filtered_data = data[(data['ROS'] < 1) & (data['normalWind'] > -1)]
+    filtered_data = data#[(data['ROS'] < 10)]
 
     #Sort data by 'ROS'
     sorted_data = filtered_data.sort_values(by='ROS')
@@ -146,17 +184,17 @@ if phase == phaseMakeDBandRun:
     
     # Plot 'ROS' vs 'normalWind'
     plt.subplot(1, 2, 1)  # 1 row, 2 columns, first plot
-    plt.scatter(sorted_data['ROS'], sorted_data['normalWind'], color='blue')
+    plt.scatter(sorted_data['normalWind'], sorted_data['ROS'], color='blue', s=0.005)
     plt.title('ROS vs normalWind')
-    plt.xlabel('ROS')
-    plt.ylabel('normalWind')
+    plt.xlabel('normalWind')
+    plt.ylabel('ROS')
     
     # Plot 'ROS' vs 'slope'
     plt.subplot(1, 2, 2)  # 1 row, 2 columns, second plot
-    plt.scatter(sorted_data['ROS'], sorted_data['slope'], color='green')
+    plt.scatter(sorted_data['slope'], sorted_data['ROS'], color='green', s=0.005)
     plt.title('ROS vs Slope')
-    plt.xlabel('ROS')
-    plt.ylabel('Slope')
+    plt.xlabel('Slope')
+    plt.ylabel('ROS')
     
     # Show plot
     plt.tight_layout()
@@ -166,8 +204,32 @@ if phase == phaseMakeDBandRun:
     inputs = filtered_data[input_names]
     outputs = filtered_data[output_names]
     
+    for layer in model.layers:
+        if isinstance(layer, tf.keras.layers.Normalization):
+            # Re-adapt the normalization layer with the new inputs
+            print("Re-adapting normalization layer")
+            layer.adapt(inputs)
+    
+    
     model.compile(optimizer='adam', loss='mean_squared_error')
-    model.fit(inputs.to_numpy(), outputs.to_numpy(), epochs=50)
+    
+    # Define early stopping callback
+    early_stopping = EarlyStopping(monitor='loss', min_delta=0.01, patience=10, verbose=1, mode='min', baseline=0.1)
+    
+    # Fit the model
+    model.fit(inputs.to_numpy(), outputs.to_numpy(), epochs=10, callbacks=[early_stopping])
+ 
+    
+    predictions = model.predict(inputs.to_numpy())
+    true_values = outputs.to_numpy()
+    
+    # Calculate Mean Squared Error
+    mse = mean_squared_error(true_values, predictions)
+    
+    # Compute Root Mean Squared Error
+    rmse = np.sqrt(mse)
+    
+    print("Total RMSE:", rmse)
     
     save_model_structure(model, ff["FFANNPropagationModelPath"], input_names=input_names, output_names=["ROS"])
     
