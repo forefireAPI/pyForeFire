@@ -10,53 +10,124 @@ from datetime import datetime
 import time
 
 
-def RothermelAndrews2018():
-    return """Index;fuelDens_lbft3;mdOnDry1h_r;SAVcar_ftinv;fd_ft;fl1h_lbft2;H_BTUlb;mois_ext_r;se_r;st_r
-111;500.0;0.15;2400.0;0;0.0;1.5E7;0.3;0.01;0.0555
-112;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-121;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-122;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-123;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-124;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-131;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-132;720.0;0.08;5544.0;0;0.89;1.6E7;0.3;0.01;0.0555
-133;720.0;0.08;5544.0;0;0.89;1.6E7;0.3;0.01;0.0555
-141;512.0;0.08;6562;0.46;0.22;1.86E7;0.3;0.01;0.0555
-142;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-211;500.0;0.13;2400.0;1;0.6;1.5E7;0.3;0.01;0.0555
-212;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-213;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-221;500.0;0.13;2400.0;0.5;0.6;1.5E7;0.3;0.01;0.0555
-222;500.0;0.13;2400.0;2;0.6;1.5E7;0.3;0.01;0.0555
-223;500.0;0.13;2400.0;2;0.6;1.5E7;0.3;0.01;0.0555
-231;500.0;0.13;2400.0;2;0.6;1.5E7;0.3;0.01;0.0555
-241;500.0;0.13;2400.0;1.6;0.6;1.5E7;0.3;0.01;0.0555
-242;500.0;0.13;2400.0;1.6;0.6;1.5E7;0.3;0.01;0.0555
-243;500.0;0.13;2400.0;1.6;0.6;1.5E7;0.3;0.01;0.0555
-244;500.0;0.13;2400.0;1.6;0.6;1.5E7;0.3;0.01;0.0555
-311;512.0;0.13;4922.0;0.3;0.9;1.86E7;0.3;0.01;0.0555
-312;512.0;0.13;4922.0;0.3;0.9;1.5E7;0.3;0.01;0.0555
-313;500.0;0.13;2400.0;1.6;0.6;1.5E7;0.3;0.01;0.0555
-321;512.0;0.13;5905.0;0.46;0.54;1.86E7;0.3;0.01;0.0555
-322;512.0;0.13;2460.0;1.2;0.8;1.86E7;0.3;0.01;0.0555
-323;512.0;0.13;2460.0;1.8;0.8;1.86E7;0.3;0.01;0.0555
-324;512.0;0.13;2460.0;1.8;0.8;1.5E7;0.3;0.01;0.0555
-331;500.0;1.6;2400.0;0;10;1.5E7;0.3;0.01;0.0555
-332;500.0;10;2400.0;0;10;1.5E7;0.3;0.01;0.0555
-333;512.0;0.08;6560.0;0.3;0.2;1.86E7;0.3;0.01;0.0555
-334;512.0;0.08;6560.0;0.3;0.2;1.86E7;0.3;0.01;0.0555
-335;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-411;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-412;500.0;0.13;2400.0;0.1;0.6;1.5E7;0.3;0.01;0.0555
-421;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-422;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-423;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-511;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-512;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-521;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-522;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-523;500.0;0.13;2400.0;0;0.6;1.5E7;0.3;0.01;0.0555
-"""
+def RothermelAndrews2018FuelTable():
+    """
+    Table of 'SH' fuel characteristics in Andrews, 2018, page 33.
+    @book{Andrews_2018, 
+        title={The Rothermel surface fire spread model and associated developments: A comprehensive explanation}, 
+        url={http://dx.doi.org/10.2737/RMRS-GTR-371}, 
+        DOI={10.2737/rmrs-gtr-371}, 
+        institution={U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station}, 
+        author={Andrews, Patricia L.}, 
+        year={2018}
+        }
+    Header: 
+        CODE
+        1h fuel load (US short tons / acre)
+        Fuel bed depth (feat)
+        Dead fuel moisture of extinction (%)
+        Characteristic Surface-Area-to-Volume ratio (feat^2/feat^3)
+        Heat content (British thermal unit / leab)
+        Particle density (leab / feat^3)
+        Total mineral content (ratio)
+        Effective mineral content (ratio)
+        Fuel Particle Moisture Content (ratio)
+    """
+
+    def to_list(table):
+        table = [x.split(';') for x in table.split('\n')]
+        return table
+
+    fuel_characteristics = to_list(
+        RothermelAndrews2018FuelCharacteristics())
+    constant_fuel_characteristics = to_list(
+        RothermelAndrews2018ConstantFuelCharacteristics())
+    environmental_fuel_characteristics = to_list(
+        RothermelAndrews2018EnvironmentalFuelCharacteristics())
+
+    fuel_characteristics[0][0] = 'Index'
+    for i in range(1, len(fuel_characteristics)):
+        fuel_characteristics[i][0] = str(i)
+
+    fuel_characteristics[0].extend(constant_fuel_characteristics[0])
+    for i in range(1, len(fuel_characteristics)):
+        fuel_characteristics[i].extend(constant_fuel_characteristics[1])
+
+    fuel_characteristics[0].extend(environmental_fuel_characteristics[0][1:])
+    for i in range(1, len(fuel_characteristics)):
+        fuel_characteristics[i].extend(environmental_fuel_characteristics[i][1:])
+
+    fuel_characteristics = [';'.join(x) for x in fuel_characteristics]
+    fuel_characteristics = '\n'.join(fuel_characteristics)
+    
+    return fuel_characteristics
+
+def RothermelAndrews2018FuelCharacteristics():
+    """
+    Table of 'SH' fuel characteristics in Andrews, 2018, page 33.
+    @book{Andrews_2018, 
+        title={The Rothermel surface fire spread model and associated developments: A comprehensive explanation}, 
+        url={http://dx.doi.org/10.2737/RMRS-GTR-371}, 
+        DOI={10.2737/rmrs-gtr-371}, 
+        institution={U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station}, 
+        author={Andrews, Patricia L.}, 
+        year={2018}
+        }
+    Header: 
+        CODE
+        1h fuel load (US short tons / acre)
+        Fuel bed depth (feat)
+        Dead fuel moisture of extinction (%)
+        Characteristic Surface-Area-to-Volume ratio (feat^2/feat^3)
+    """
+    return """CODE;fl1h_tac;fd_ft;Dme_pc;SAVcar_ftinv
+SH1;0.25;1.0;15;1674
+SH2;1.35;1.0;15;1672
+SH3;0.45;2.4;40;1371
+SH4;0.85;3.0;30;1682
+SH5;3.6;6.0;15;1252
+SH6;2.9;2.0;30;1144
+SH7;3.5;6.0;15;1233
+SH8;2.05;3.0;40;1386
+SH9;4.5;4.4;40;1378"""
+
+def RothermelAndrews2018ConstantFuelCharacteristics():
+    """
+    Table of 'SH' constant fuel characteristics in Andrews, 2018, page 33.
+    @book{Andrews_2018, 
+        title={The Rothermel surface fire spread model and associated developments: A comprehensive explanation}, 
+        url={http://dx.doi.org/10.2737/RMRS-GTR-371}, 
+        DOI={10.2737/rmrs-gtr-371}, 
+        institution={U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station}, 
+        author={Andrews, Patricia L.}, 
+        year={2018}
+        }
+    Header:
+        Heat content (British thermal unit / leab)
+        Particle density (leab / feat^3)
+        Total mineral content (ratio)
+        Effective mineral content (ratio)
+    """
+    return """H_BTUlb;fuelDens_lbft3;totMineral_r;effectMineral_r
+8000;32;0.0555;0.010"""
+
+def RothermelAndrews2018EnvironmentalFuelCharacteristics():
+    """
+    Table of environmental fuel characteristics
+    Header:
+        CODE
+        Fuel Particle Moisture Content (ratio)
+    """
+    return """CODE;mdOnDry1h_r
+SH1;0.06
+SH2;0.06
+SH3;0.06
+SH4;0.06
+SH5;0.06
+SH6;0.06
+SH7;0.06
+SH8;0.06
+SH9;0.06"""
 
 
 def standardRothermelFuelTable():
