@@ -86,14 +86,40 @@ class UniformForeFireSimulation(ForeFireSimulation):
         fire_front: Tuple[Tuple[float]]
     ):
         super().__init__(propagation_model, domain, fuels_table)
+        
+        # Instantiate domain
+        domain_height, domain_width = domain[-1], domain[-2]
+        domain_string = \
+            f'FireDomain[sw=({self.ff["SWx"]},{self.ff["SWy"]},0);ne=({self.ff["SWx"] + self.ff["Lx"]},{self.ff["SWy"] + self.ff["Ly"]},0);t=0]'
+        logger.info(domain_string)
+        self.ff.execute(domain_string)
+
+        # Propagation model layer
+        self.ff.addLayer(
+            "propagation",
+            self.ff["propagationModel"],
+            "propagationModel")
+        logger.info(f'ROS model: {propagation_model}')
+
+        # Wind layers
         self.ff["windU"] = horizontal_wind
         self.ff["windV"] = vertical_wind
-        self.domain_height = domain[-1]
-        self.domain_width = domain[-2]
-        self.fuel_map = fuel_type * np.ones((1, 1, self.domain_height, self.domain_width))
-        self.domain_string = \
-            f'FireDomain[sw=({self.ff["SWx"]},{self.ff["SWy"]},0);ne=({self.ff["SWx"] + self.ff["Lx"]},{self.ff["SWy"] + self.ff["Ly"]},0);t=0]'
-        self.fire_front = fire_front
+        self.ff.addLayer("data","windU","windU")
+        self.ff.addLayer("data","windV","windV")
+        logger.info(f'Uniform wind conditions: horizontal wind: {horizontal_wind} m/s | vertical wind: {vertical_wind} m/s')
+
+        # Fuel layer
+        self.fuel_map = fuel_type * np.ones((1, 1, domain_height, domain_width))
+        self.ff.addIndexLayer(
+            "table", "fuel", 
+            float(self.ff["SWx"]), float(self.ff["SWy"]), 0, domain_width, domain_height, 0, self.fuel_map)
+        logger.info(f'Fuel map types: {list(np.unique(self.fuel_map))}')
+        
+        # Instantiate fire front (front orentation is clockwise!!)
+        self.ff.execute(f"\tFireFront[id=2;domain=0;t=0]")
+        for (xp, yp) in fire_front:
+            self.ff.execute(f"\t\tFireNode[domain=0;loc=({xp},{yp},0);vel=(0,0,0);t=0;state=init;frontId=2]")
+        logger.info(f'Initial fire front: {fire_front}')
 
     def __call__(
         self,
@@ -105,25 +131,6 @@ class UniformForeFireSimulation(ForeFireSimulation):
             nb_step (int): number of step the simulation will execute
             step_size (float): duration (in seconds) between each step
         """
-        # Instantiate domain
-        self.ff.execute(self.domain_string)
-        # Propagation model layer
-        self.ff.addLayer(
-            "propagation",
-            self.ff["propagationModel"],
-            "propagationModel")
-        # Wind layers
-        self.ff.addLayer("data","windU","windU")
-        self.ff.addLayer("data","windV","windV")
-        # Fuel layer
-        self.ff.addIndexLayer(
-            "table", "fuel", 
-            float(self.ff["SWx"]), float(self.ff["SWy"]), 0, self.domain_width, self.domain_height, 0, self.fuel_map)
-        # Instantiate fire front (front orentation is clockwise!!)
-        self.ff.execute(f"\tFireFront[id=2;domain=0;t=0]")
-        for (xp, yp) in self.fire_front:
-            self.ff.execute(f"\t\tFireNode[domain=0;loc=({xp},{yp},0);vel=(0,0,0);t=0;state=init;frontId=2]")
-
         pathes = []
         bournawt=[]
         times=[]
