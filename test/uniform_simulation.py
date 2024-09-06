@@ -4,7 +4,7 @@ import argparse
 import yaml
 
 
-def run_simulation(config):
+def uniform_simulation(config):
     propagation_model = config['propagation_model']
 
     if 'fuels_table' in config:
@@ -12,24 +12,20 @@ def run_simulation(config):
     else:
         fuels_table = get_fuels_table(propagation_model)
     fuel_type = config['fuel_type']
-
     domain_width = config['domain_width']
     domain_height = config['domain_height']
     domain = (0, 0, domain_width, domain_height)
-
     horizontal_wind = config['horizontal_wind']
-    vertical_wind = config['horizontal_wind']
-
-    slope = config['slope'] #TODO : add uniform slope
-
-    # TODO: add config start fire
-    pointxcenter = domain_width // 2
-    pointycenter = domain_height // 2
-    h1, w1 = 50, 50
-    xp1,yp1 = pointxcenter, pointycenter + h1
-    xp2,yp2 = pointxcenter + w1, pointycenter
-    xp3,yp3 = pointxcenter - w1, pointycenter
-    fire_front = ((xp1, yp1), (xp2, yp2), (xp3, yp3))
+    vertical_wind = config['vertical_wind']
+    slope = config['slope']
+    fire_front = config['fire_front']
+    spatial_increment = config['spatial_increment']
+    minimal_propagative_front_depth = config['minimal_propagative_front_depth']
+    perimeter_resolution = config['perimeter_resolution']
+    relax = config['relax']
+    smoothing = config['smoothing']
+    min_speed = config['min_speed']
+    burned_map_layer = config['burned_map_layer']
 
     simulation = UniformForeFireSimulation(
         propagation_model,
@@ -39,7 +35,14 @@ def run_simulation(config):
         vertical_wind,
         fuel_type,
         slope,
-        fire_front
+        fire_front,
+        spatial_increment,
+        minimal_propagative_front_depth,
+        perimeter_resolution,
+        relax,
+        smoothing,
+        min_speed,
+        burned_map_layer,
     )
 
     nb_steps = config['nb_steps']
@@ -56,9 +59,7 @@ def run_simulation(config):
         float(simulation.ff["SWx"]) + float(simulation.ff["Lx"]),
         float(simulation.ff["SWy"]),
         float(simulation.ff["SWy"]) + float(simulation.ff["Ly"]))
-    plot_simulation(pathes, simulation.fuel_map[0, 0], None, plotExtents, None)
-    # plot_test(pathes,simulation.fuel_map)
-
+    plot_simulation(pathes, simulation.fuel_map[0, 0], simulation.altitude_map[0, 0], plotExtents, None)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -85,4 +86,4 @@ if __name__ == '__main__':
     else:
         config = vars(args)
 
-    run_simulation(config)
+    uniform_simulation(config)
