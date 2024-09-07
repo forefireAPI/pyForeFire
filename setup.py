@@ -29,7 +29,7 @@ ext_modules = [
         libraries=libraries,
         library_dirs=library_dirs,
         runtime_library_dirs=library_dirs,
-        extra_objects=[FOREFIRE_DIR + '/lib/lib' + FOREFIRE_LIB + '.dylib']
+        extra_objects=[FOREFIRE_DIR + '/lib/lib' + FOREFIRE_LIB + '.so']
     ),
 ]
 

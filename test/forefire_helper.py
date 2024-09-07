@@ -8,6 +8,137 @@ import xarray as xr
 import pyforefire as forefire
 from datetime import datetime
 import time
+import seaborn as sns
+
+
+def get_fuels_table(propagation_model):
+    if propagation_model == 'RothermelAndrews2018':
+        return RothermelAndrews2018FuelTable
+    elif propagation_model == 'Rothermel':
+        return standardRothermelFuelTable
+    else:
+        raise NotImplementedError
+
+
+def RothermelAndrews2018FuelTable():
+    """
+    Table of 'SH' fuel characteristics in Andrews, 2018, page 33.
+    @book{Andrews_2018, 
+        title={The Rothermel surface fire spread model and associated developments: A comprehensive explanation}, 
+        url={http://dx.doi.org/10.2737/RMRS-GTR-371}, 
+        DOI={10.2737/rmrs-gtr-371}, 
+        institution={U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station}, 
+        author={Andrews, Patricia L.}, 
+        year={2018}
+        }
+    Header: 
+        CODE
+        1h fuel load (US short tons / acre)
+        Fuel bed depth (feat)
+        Dead fuel moisture of extinction (%)
+        Characteristic Surface-Area-to-Volume ratio (feat^2/feat^3)
+        Heat content (British thermal unit / leab)
+        Particle density (leab / feat^3)
+        Total mineral content (ratio)
+        Effective mineral content (ratio)
+        Fuel Particle Moisture Content (ratio)
+    """
+
+    def to_list(table):
+        table = [x.split(';') for x in table.split('\n')]
+        return table
+
+    fuel_characteristics = to_list(
+        RothermelAndrews2018FuelCharacteristics())
+    constant_fuel_characteristics = to_list(
+        RothermelAndrews2018ConstantFuelCharacteristics())
+    environmental_fuel_characteristics = to_list(
+        RothermelAndrews2018EnvironmentalFuelCharacteristics())
+
+    fuel_characteristics[0][0] = 'Index'
+    for i in range(1, len(fuel_characteristics)):
+        fuel_characteristics[i][0] = str(i)
+
+    fuel_characteristics[0].extend(constant_fuel_characteristics[0])
+    for i in range(1, len(fuel_characteristics)):
+        fuel_characteristics[i].extend(constant_fuel_characteristics[1])
+
+    fuel_characteristics[0].extend(environmental_fuel_characteristics[0][1:])
+    for i in range(1, len(fuel_characteristics)):
+        fuel_characteristics[i].extend(environmental_fuel_characteristics[i][1:])
+
+    fuel_characteristics = [';'.join(x) for x in fuel_characteristics]
+    fuel_characteristics = '\n'.join(fuel_characteristics)
+    
+    return fuel_characteristics
+
+def RothermelAndrews2018FuelCharacteristics():
+    """
+    Table of 'SH' fuel characteristics in Andrews, 2018, page 33.
+    @book{Andrews_2018, 
+        title={The Rothermel surface fire spread model and associated developments: A comprehensive explanation}, 
+        url={http://dx.doi.org/10.2737/RMRS-GTR-371}, 
+        DOI={10.2737/rmrs-gtr-371}, 
+        institution={U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station}, 
+        author={Andrews, Patricia L.}, 
+        year={2018}
+        }
+    Header: 
+        CODE
+        1h fuel load (US short tons / acre)
+        Fuel bed depth (feat)
+        Dead fuel moisture of extinction (%)
+        Characteristic Surface-Area-to-Volume ratio (feat^2/feat^3)
+    """
+    return """CODE;fl1h_tac;fd_ft;Dme_pc;SAVcar_ftinv
+SH1;0.25;1.0;15;1674
+SH2;1.35;1.0;15;1672
+SH3;0.45;2.4;40;1371
+SH4;0.85;3.0;30;1682
+SH5;3.6;6.0;15;1252
+SH6;2.9;2.0;30;1144
+SH7;3.5;6.0;15;1233
+SH8;2.05;3.0;40;1386
+SH9;4.5;4.4;40;1378"""
+
+def RothermelAndrews2018ConstantFuelCharacteristics():
+    """
+    Table of 'SH' constant fuel characteristics in Andrews, 2018, page 33.
+    @book{Andrews_2018, 
+        title={The Rothermel surface fire spread model and associated developments: A comprehensive explanation}, 
+        url={http://dx.doi.org/10.2737/RMRS-GTR-371}, 
+        DOI={10.2737/rmrs-gtr-371}, 
+        institution={U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station}, 
+        author={Andrews, Patricia L.}, 
+        year={2018}
+        }
+    Header:
+        Heat content (British thermal unit / leab)
+        Particle density (leab / feat^3)
+        Total mineral content (ratio)
+        Effective mineral content (ratio)
+    """
+    return """H_BTUlb;fuelDens_lbft3;totMineral_r;effectMineral_r
+8000;32;0.0555;0.010"""
+
+def RothermelAndrews2018EnvironmentalFuelCharacteristics():
+    """
+    Table of environmental fuel characteristics
+    Header:
+        CODE
+        Fuel Particle Moisture Content (ratio)
+    """
+    return """CODE;mdOnDry1h_r
+SH1;0.06
+SH2;0.06
+SH3;0.06
+SH4;0.06
+SH5;0.06
+SH6;0.06
+SH7;0.06
+SH8;0.06
+SH9;0.06"""
+
 
 def standardRothermelFuelTable():
     return """Index;Rhod;Rhol;Md;Ml;sd;sl;e;Sigmad;Sigmal;stoch;RhoA;Ta;Tau0;Deltah;DeltaH;Cp;Cpa;Ti;X0;r00;Blai;me
@@ -464,7 +595,7 @@ def plot_simulation(pathes, fuel_map, elevation_map, myExtents, scalMap = None):
         elevation = elevation_map#np.transpose(elevation_map.reshape(elevation_map.shape[0], elevation_map.shape[1], 1))[0]
         
         contour_levels = np.arange(np.min(elevation), np.max(elevation), 200)  # Contours every 200m
-        ax.contour(elevation, levels=contour_levels, colors='white', origin='lower', extent=myExtents, linewidths=0.5, linestyles='solid')
+        ax.contour(elevation, levels=contour_levels, colors='black', origin='lower', extent=myExtents, linewidths=0.5, linestyles='solid')
     
     if scalMap is not None:
         CS = ax.imshow(scalMap, origin='lower', extent=myExtents)
@@ -477,11 +608,11 @@ def plot_simulation(pathes, fuel_map, elevation_map, myExtents, scalMap = None):
     # # plt.colorbar(plt.cm.ScalarMappable(cmap=cmap, norm=norm), cax=ax)
     # plt.colorbar(CS, norm=norm)
 
-    path_colors = ['red', 'orange', 'yellow', 'white']
+    path_colors = sns.color_palette("flare", n_colors=len(pathes))
 
     # Plot current firefronts to the first 3 subplots
     for p, path in enumerate(pathes):
-        patch = mpatches.PathPatch(path, edgecolor=path_colors[p % len(path_colors)], facecolor='none', alpha=1, lw=2)
+        patch = mpatches.PathPatch(path, edgecolor=path_colors[p], facecolor='none', alpha=1, lw=2)
         ax.add_patch(patch)
         ax.grid()
         ax.axis('equal')

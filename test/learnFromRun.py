@@ -14,8 +14,10 @@ import tensorflow as tf
 from forefire_helper import *
 from forefire_TF_helpers import *
 from sklearn.metrics import mean_squared_error
-
 from keras.callbacks import EarlyStopping
+import h5netcdf.legacyapi as netCDF4
+import os
+
 # All you need to do a propagation model / simulation emulation
 # Keep in mind the emulator will be somehow linked to the numerical model in use
 # you have to run this script 3 times for the 3 phases, each time go to next phase
@@ -55,6 +57,9 @@ print(f"Hello !! making some fire model emulation\n Running phase {phase} over 3
 
 
 landscape_file_path = "sampleUVCoeffLandscape.nc"
+fuel_dataset = netCDF4.Dataset(os.path.join('ForeFire', landscape_file_path))
+fuel_map = fuel_dataset.variables['fuel'][0, 0]
+
 at_file_path = "ForeFire.0.nc"
 initialPropagationModel = "Rothermel"
 
@@ -75,6 +80,7 @@ ff["FFANNPropagationModelPath"] = f"{initialPropagationModel}.ffann"
 ff["FFBMapLoggerCSVPath"] = f"{initialPropagationModel}db.csv"
 ff["LookAheadDistanceForeTimeGradientDataLayer"] = 40   
 
+import pdb; pdb.set_trace()
 
 if phase == phaseRunForANN:
     ff["propagationModel"] = initialPropagationModel
@@ -95,7 +101,8 @@ if phase == phaseMakeDBandRun:
     at_map[at_map <=0] = 0
     lcp.close()
     ff.addScalarLayer("data", "forced_arrival_time_of_front", float(ff["SWx"]), float(ff["SWy"]), 0, float(ff["Lx"]), float(ff["Ly"]), 0, at_map) 
-    
+
+# Four ignition locations
 ff.execute("startFire[loc=(506666,4625385,0);t=0]")
 ff.execute("startFire[loc=(506666,4614485,0);t=0]")
 ff.execute("startFire[loc=(526666,4644485,0);t=0]")
@@ -104,7 +111,7 @@ start_time = time.time()
 
 pathes = []
 
-nb_steps = 15  # The number of steps the simulation will execute
+nb_steps = 5  # The number of steps the simulation will execute
 step_size = 120  # The duration (in seconds) between each step
 angle_deg = 40.0  # The angle by which to rotate the vector at each step
 norm = 20  # The norm of the vector
@@ -133,7 +140,9 @@ print(f"Total time taken for simulation : {duration} seconds")
 at=None
 
 if phase == phaseRunForANN:
+    # Save burned map in ForeFore.0.nc
     ff.execute("save[]")
+    # Get input properties names
     input_names=ff[initialPropagationModel+".keys"].split(";")
     output_names=["ROS",]
     num_samples = 10
@@ -155,8 +164,8 @@ if phase == phaseRunForANN:
     
     model = tf.keras.Sequential([
         input_normalizer,                              # Normalize inputs
-        tf.keras.layers.Dense(256, activation='relu', input_shape=(input_size,)),  # Set input_shape explicitly
-        tf.keras.layers.Dense(128, activation='relu'),  # Third dense layer
+        tf.keras.layers.Dense(32, activation='relu', input_shape=(input_size,)),  # Set input_shape explicitly
+        tf.keras.layers.Dense(32, activation='relu'),  # Third dense layer
         tf.keras.layers.Dense(len(output_names))        # Final output layer
     ])
     
@@ -236,5 +245,5 @@ if phase == phaseMakeDBandRun:
 
     
 ffplotExtents =(float(ff["SWx"]),float(ff["SWx"]) + float(ff["Lx"]),float(ff["SWy"]),float(ff["SWy"]) + float(ff["Ly"]))   
-plot_simulation(pathes,None ,None,  ffplotExtents,scalMap=at) 
-    
+# plot_simulation(pathes, fuel_map ,None,  ffplotExtents,scalMap=at) 
+plot_simulation(pathes, None, None, ffplotExtents, scalMap=at)
