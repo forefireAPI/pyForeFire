@@ -8,6 +8,16 @@ import xarray as xr
 import pyforefire as forefire
 from datetime import datetime
 import time
+import seaborn as sns
+
+
+def get_fuels_table(propagation_model):
+    if propagation_model == 'RothermelAndrews2018':
+        return RothermelAndrews2018FuelTable
+    elif propagation_model == 'Rothermel':
+        return standardRothermelFuelTable
+    else:
+        raise NotImplementedError
 
 
 def RothermelAndrews2018FuelTable():
@@ -585,7 +595,7 @@ def plot_simulation(pathes, fuel_map, elevation_map, myExtents, scalMap = None):
         elevation = elevation_map#np.transpose(elevation_map.reshape(elevation_map.shape[0], elevation_map.shape[1], 1))[0]
         
         contour_levels = np.arange(np.min(elevation), np.max(elevation), 200)  # Contours every 200m
-        ax.contour(elevation, levels=contour_levels, colors='white', origin='lower', extent=myExtents, linewidths=0.5, linestyles='solid')
+        ax.contour(elevation, levels=contour_levels, colors='black', origin='lower', extent=myExtents, linewidths=0.5, linestyles='solid')
     
     if scalMap is not None:
         CS = ax.imshow(scalMap, origin='lower', extent=myExtents)
@@ -598,11 +608,11 @@ def plot_simulation(pathes, fuel_map, elevation_map, myExtents, scalMap = None):
     # # plt.colorbar(plt.cm.ScalarMappable(cmap=cmap, norm=norm), cax=ax)
     # plt.colorbar(CS, norm=norm)
 
-    path_colors = ['red', 'orange', 'yellow', 'white']
+    path_colors = sns.color_palette("flare", n_colors=len(pathes))
 
     # Plot current firefronts to the first 3 subplots
     for p, path in enumerate(pathes):
-        patch = mpatches.PathPatch(path, edgecolor=path_colors[p % len(path_colors)], facecolor='none', alpha=1, lw=2)
+        patch = mpatches.PathPatch(path, edgecolor=path_colors[p], facecolor='none', alpha=1, lw=2)
         ax.add_patch(patch)
         ax.grid()
         ax.axis('equal')

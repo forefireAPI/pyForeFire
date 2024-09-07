@@ -10,6 +10,7 @@ bin_model_path = os.path.join(tf_model_path, 'saved_model.ffann')
 
 if not os.path.exists(bin_model_path):
     model = tf.keras.saving.load_model(tf_model_path)
+    import pdb; pdb.set_trace()
     save_model_structure(
         model, 
         bin_model_path, 
