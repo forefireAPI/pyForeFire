@@ -118,6 +118,7 @@ class UniformForeFireSimulation(ForeFireSimulation):
         fuel_type: float,
         slope: float,
         fire_front: List[List[float]],
+        nn_ros_model_path: Optional[str] = None,
         spatial_increment: Optional[float] = None,
         minimal_propagative_front_depth: Optional[float] = None,
         perimeter_resolution: Optional[float] = None,
@@ -146,6 +147,8 @@ class UniformForeFireSimulation(ForeFireSimulation):
         self.ff.execute(domain_string)
 
         # Propagation model layer
+        if nn_ros_model_path:
+            self.ff["FFANNPropagationModelPath"] = nn_ros_model_path
         self.ff.addLayer(
             "propagation",
             self.ff["propagationModel"],

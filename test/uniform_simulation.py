@@ -6,6 +6,7 @@ import yaml
 
 def uniform_simulation(config):
     propagation_model = config['propagation_model']
+    nn_ros_model_path = config['nn_ros_model_path']
 
     if 'fuels_table' in config:
         fuels_table = fuels_table
@@ -23,7 +24,6 @@ def uniform_simulation(config):
     minimal_propagative_front_depth = config['minimal_propagative_front_depth']
     perimeter_resolution = config['perimeter_resolution']
     relax = config['relax']
-    smoothing = config['smoothing']
     min_speed = config['min_speed']
     burned_map_layer = config['burned_map_layer']
 
@@ -36,11 +36,11 @@ def uniform_simulation(config):
         fuel_type,
         slope,
         fire_front,
+        nn_ros_model_path,
         spatial_increment,
         minimal_propagative_front_depth,
         perimeter_resolution,
         relax,
-        smoothing,
         min_speed,
         burned_map_layer,
     )
