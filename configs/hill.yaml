@@ -1,14 +1,15 @@
-propagation_model: RothermelAndrews2018
-nn_ros_model_path:
-fuel_type: 6
-domain_width: 2000
-domain_height: 2000
+# propagation_model: RothermelAndrews2018
+# nn_ros_model_path:
+propagation_model: ANNPropagationModel
+nn_ros_model_path: /home/ai4geo/Documents/nn_ros_models/nn_abs_256_RothermelAndrews2018/saved_model.ffann
+fuel_type: [6, 7]
+domain_width: 1000
+domain_height: 1000
 horizontal_wind: 200.0
 vertical_wind: 0.0
-slope: 0
-nb_steps: 10
+nb_steps: 20
 step_size: 10
-fire_front: [[950, 1050], [1000, 1000], [950, 950]]
+fire_front: [[0, 550], [50, 500], [0, 450]]
 
 spatial_increment: 0.5
 perimeter_resolution: 2 # max distance between two nodes

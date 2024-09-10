@@ -16,6 +16,9 @@ def get_fuels_table(propagation_model):
         return RothermelAndrews2018FuelTable
     elif propagation_model == 'Rothermel':
         return standardRothermelFuelTable
+    elif propagation_model == 'ANNPropagationModel':
+        #TODO: fix for a more general use
+        return RothermelAndrews2018FuelTable
     else:
         raise NotImplementedError
 

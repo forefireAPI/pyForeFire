@@ -1,10 +1,22 @@
 from forefire_helper import *
-from simulation import UniformForeFireSimulation
+from simulation import UniformWindForeFireSimulation
 import argparse
 import yaml
+import numpy as np
+import matplotlib.pyplot as plt
+import pdb
 
 
-def uniform_simulation(config):
+def hill(x, mean, cov, height=100):
+    N = len(mean)
+    den = (2*np.pi)**(N/2) * np.linalg.det(cov)**0.5
+    exp = np.exp(-0.5 * np.einsum('...k,kl,...l->...', x-mean, np.linalg.inv(cov), x-mean))
+    gaussian = exp / den
+    altitude = height * (gaussian - gaussian.min()) / (gaussian.max() - gaussian.min())
+    return altitude
+
+
+def hill_simulation(config):
     propagation_model = config['propagation_model']
     nn_ros_model_path = config['nn_ros_model_path']
 
@@ -16,9 +28,32 @@ def uniform_simulation(config):
     domain_width = config['domain_width']
     domain_height = config['domain_height']
     domain = (0, 0, domain_width, domain_height)
+
+    # Create hill with a 2D gaussian
+    mean = np.array([domain_height // 2, domain_width //2])
+    cov = np.array([
+        [1e5, 0],
+        [0, 1e5]])
+
+    map_x, map_y = np.meshgrid(
+        np.arange(domain_height),
+        np.arange(domain_width)
+    )
+
+    map = np.empty(map_x.shape + (2,))
+    map[:, :, 0] = map_x
+    map[:, :, 1] = map_y
+
+    altitude_map = hill(map, mean, cov) 
+    # plt.imshow(altitude_map); plt.show()  
+
+    fuel_map = np.ones_like(altitude_map)
+    fuel_map[:, :domain_width // 2] = fuel_type[0]
+    fuel_map[:, :domain_width // 2] = fuel_type[1]
+    
     horizontal_wind = config['horizontal_wind']
     vertical_wind = config['vertical_wind']
-    slope = config['slope']
+
     fire_front = config['fire_front']
     spatial_increment = config['spatial_increment']
     minimal_propagative_front_depth = config['minimal_propagative_front_depth']
@@ -27,14 +62,13 @@ def uniform_simulation(config):
     min_speed = config['min_speed']
     burned_map_layer = config['burned_map_layer']
 
-    simulation = UniformForeFireSimulation(
+    simulation = UniformWindForeFireSimulation(
         propagation_model,
-        domain,
         fuels_table,
         horizontal_wind,
         vertical_wind,
-        fuel_type,
-        slope,
+        fuel_map,
+        altitude_map,
         fire_front,
         nn_ros_model_path,
         spatial_increment,
@@ -86,4 +120,4 @@ if __name__ == '__main__':
     else:
         config = vars(args)
 
-    uniform_simulation(config)
+    hill_simulation(config)
