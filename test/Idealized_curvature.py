@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.path as mpath
 import matplotlib.patches as mpatches
 import math as m
-import pyforefire as forefire
-from forefire_helper import printToPathe
+import pyforefire as pyff
+
 ###############################################################################
 ##:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #                    IDEALIZED TEST CASE CURVATURE
@@ -67,7 +67,7 @@ step_size = 20                # The duration (in seconds) of time steps
 fuel_type = 1                  # The type of used fuel
 
 ##   Initialize pyforefire module
-ff = forefire.ForeFire()
+ff = pyff.ForeFire()
 ##  Fuel settings
 ff["fuelsTable"] = VVCoeffTable()
 ff["defaultFuelType"]=1
@@ -164,7 +164,7 @@ for i in range(1, nb_steps+1):
         print("goTo[t=%f]" % (i*step_size))
         ff.execute("goTo[t=%f]" % (i*step_size))
         # Get pathes from previous execution
-        newPathes = printToPathe(ff.execute("print[]"))
+        newPathes = pyff.helpers.printToPathe(ff.execute("print[]"))
         pathes += newPathes
 
     except KeyboardInterrupt:

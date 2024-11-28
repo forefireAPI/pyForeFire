@@ -19,8 +19,8 @@ fuel_type = 103                 # The type of used fuel
 ff = forefire.ForeFire()
 
 # Set advanced simulation parameters
-ff.setString("ForeFireDataDirectory", ".")
-ff.setString("fuelsTableFile", fuel_file_path)
+
+ff["fuelsTable"] = standardRothermelFuelTable()
 ff.setDouble("spatialIncrement",0.2)
 ff.setDouble("minimalPropagativeFrontDepth",20)
 ff.setDouble("perimeterResolution",1)

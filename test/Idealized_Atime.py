@@ -10,8 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.path as mpath
 import matplotlib.patches as mpatches
-import pyforefire as forefire
-from forefire_helper import *
+import pyforefire as forefire 
+import pyforefire as pyff
+
 
 def plot_test(pathes, myExtents,times,velocity,fs=15):
     """
@@ -55,7 +56,7 @@ step_size = 20 #1               # The duration (in seconds) of time steps
 fuel_type = 1                   # The type of used fuel by default (Index in VVCoeffTable() )
 
 ##   Initialize pyforefire module
-ff = forefire.ForeFire()
+ff = pyff.ForeFire()
 
 ##  Fuel settings
 ff["fuelsTable"] = VVCoeffTable()
@@ -134,7 +135,7 @@ for i in range(1, nb_steps+1):
         # Advance timestep by step_size
         ff.execute("goTo[t=%f]" % (i*step_size))
         # Get pathes from previous execution
-        newPathes = printToPathe(ff.execute("print[]"))
+        newPathes = pyff.helpers.printToPathe(ff.execute("print[]"))
         pathes += newPathes
         times.append(i*step_size)
 
@@ -142,7 +143,7 @@ for i in range(1, nb_steps+1):
         # Keyboard interrupt in case simulation take a while and we want to show current state of simulation
         break
 
-speedMap = computeSpeed(ff.getDoubleArray("BMap")[0,0,:,:])*float(ff["minimalPropagativeFrontDepth"])
+speedMap = pyff.helpers.computeSpeed(ff.getDoubleArray("BMap")[0,0,:,:])*float(ff["minimalPropagativeFrontDepth"])
 
 
 
@@ -156,7 +157,7 @@ print(ff["localBMapSizeX"],ff["localBMapSizeY"], np.shape(at))
 ff.execute("save[]")
 #ff.execute("plot[parameter=arrival_time;filename=at.png;cmap=viridis;histogram=true]")
 ff.execute("plot[parameter=speed;filename=at.png;cmap=viridis;range=(0,10);histogram=true]")
-plot_simulation(pathes,None ,None,  ffplotExtents ,scalMap=at)
+pyff.helpers.plot_simulation(pathes,None ,None,  ffplotExtents ,scalMap=at)
 
 # Plotting
 #ds = xr.open_dataset("/Users/filippi_j/soft/pyForeFire/test/ForeFire.0.nc")

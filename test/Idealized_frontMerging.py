@@ -12,8 +12,8 @@ import matplotlib.path as mpath
 import matplotlib.patches as mpatches
 import seaborn as sns
 import math as m
-import pyforefire as forefire
-from forefire_helper import *
+import pyforefire as pyff
+
 
 ###############################################################################
 ##:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -85,7 +85,7 @@ step_size = 10              # The duration (in seconds) between each step
 fuel_type = 1               # The type of used fuel by default (Index in VVCoeffTable() )
 
 ##   Initialize pyforefire module
-ff = forefire.ForeFire()
+ff = pyff.ForeFire()
 
 ##  Fuel settings
 # ff["fuelsTable"] = VVCoeffTable()
@@ -182,7 +182,7 @@ for i in range(1, nb_steps+1):
         print("goTo[t=%f]" % (i*step_size))
         ff.execute("goTo[t=%f]" % (i*step_size))
         # Get pathes from previous execution
-        newPathes = printToPathe(ff.execute("print[]"))
+        newPathes = pyff.helpers.printToPathe(ff.execute("print[]"))
         pathes += newPathes
         bmap=ff.getDoubleArray("BMap")
         burnrbool = np.logical_not(np.isinf(bmap))

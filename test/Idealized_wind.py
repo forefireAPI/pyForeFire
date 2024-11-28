@@ -11,7 +11,7 @@ import matplotlib.path as mpath
 import matplotlib.patches as mpatches
 import pyforefire as forefire
 import math as math
-from forefire_helper import printToPathe
+import pyforefire as pyff
 ###############################################################################
 ##:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #                    IDEALIZED TEST CASE WIND
@@ -77,7 +77,7 @@ Ray=(norm*(nb_steps_tot*step_size)/(2*np.pi)) #Ray of the circle
 
 
 # Initialize pyforefire module
-ff = forefire.ForeFire()
+ff = pyff.ForeFire()
 
 
 #Fuel settings
@@ -146,7 +146,7 @@ for i in range(nb_steps_tot+1):
     angleprint=rotation_angle_rad*180/np.pi
     try:
         new_out = ff.execute("print[]")
-        newPathes = printToPathe(new_out)
+        newPathes = pyff.helpers.printToPathe(new_out)
         ff.execute(f"trigger[wind;loc=(0.,0.,0.);vel=({herex},{herey},0);t={time}]")
         ff.execute("step[dt=%f]" % (step_size))
         print("Iteration ",i,"/",nb_steps_tot, " angle: ", angleprint,"   time: ",time)

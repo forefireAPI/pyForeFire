@@ -68,7 +68,7 @@ ff["fuelsTable"] = standardRothermelFuelTable()
 ff["spatialIncrement"] = 3
 ff["perimeterResolution"] = 10
 ff["minimalPropagativeFrontDepth"] = 40
-ff["minSpeed"] = 0.0
+ff["minSpeed"] = 0.05
 ff["maxSpeed"] = 20.0
 ff["relax"] = 1
 ff["propagationSpeedAdjustmentFactor"] = 1
@@ -102,16 +102,14 @@ if phase == phaseMakeDBandRun:
     lcp.close()
     ff.addScalarLayer("data", "forced_arrival_time_of_front", float(ff["SWx"]), float(ff["SWy"]), 0, float(ff["Lx"]), float(ff["Ly"]), 0, at_map) 
 
-# Four ignition locations
 ff.execute("startFire[loc=(506666,4625385,0);t=0]")
 ff.execute("startFire[loc=(506666,4614485,0);t=0]")
-ff.execute("startFire[loc=(526666,4644485,0);t=0]")
-ff.execute("startFire[loc=(480666,4615385,0);t=0]")
 start_time = time.time()
 
 pathes = []
 
 nb_steps = 5  # The number of steps the simulation will execute
+ 
 step_size = 120  # The duration (in seconds) between each step
 angle_deg = 40.0  # The angle by which to rotate the vector at each step
 norm = 20  # The norm of the vector
@@ -165,6 +163,7 @@ if phase == phaseRunForANN:
     model = tf.keras.Sequential([
         input_normalizer,                              # Normalize inputs
         tf.keras.layers.Dense(32, activation='relu', input_shape=(input_size,)),  # Set input_shape explicitly
+
         tf.keras.layers.Dense(32, activation='relu'),  # Third dense layer
         tf.keras.layers.Dense(len(output_names))        # Final output layer
     ])

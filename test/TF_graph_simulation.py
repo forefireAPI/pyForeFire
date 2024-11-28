@@ -8,7 +8,7 @@ from forefire_helper import *
 import time
 
 ## Simulation Parameters ##
-nb_steps = 40                # The number of step the simulation will execute
+nb_steps = 10                # The number of step the simulation will execute
 step_size = 200             # The duration (in seconds) between each step
 windU = 0                       # The Horizontal wind
 windV = 0                       # The Vertical wind
@@ -19,12 +19,20 @@ fuel_type = 1                 # The type of used fuel
 # Initialize pyforefire module
 ff = forefire.ForeFire()
 
+def testAnnFuelTable():
+    return """Index;Rhod;sd;Ta
+                0;0;0.68;0.097
+                1;1;0.73;0.44
+                2;2;0.36;0.050
+                3;3;0.11;0.05
+                4;4;0.92;0.22"""
+
 # Set advanced simulation parameters
 
 ff["fuelsTable"] = testAnnFuelTable()
 ff["FFANNPropagationModelPath"] = "/Users/filippi_j/soft/pyForeFire/test/mbase.ffann"
 ff["spatialIncrement"] = 0.5
-ff["minimalPropagativeFrontDepth"] = 10
+ff["minimalPropagativeFrontDepth"] = 2
 ff["perimeterResolution"] = 5
 ff["relax"] = 0.5
 ff["windU"] = windU  # Horizontal
@@ -64,9 +72,15 @@ ff.addLayer("propagation","ANNPropagationModel","propagationModel")
 ff["bmapLayer"] = 1
 # Init fuel_map and altitude_map with zeros
 
-fuel_map = np.random.randint(0, 5, size=(1, 1) + sim_shape)
-# Assuming sim_shape is defined
-sim_shape = (100, 100)  # Example shape, adjust as needed
+fuel_map = np.random.randint(0, 5, size=(1, 1) + sim_shape) 
+half_x, half_y = sim_shape[0] // 2, sim_shape[1] // 2
+ 
+fuel_map[0, 0, :half_x, :half_y] = 0 
+fuel_map[0, 0, :half_x, half_y:] = 1 
+fuel_map[0, 0, half_x:, :half_y] = 2
+ 
+fuel_map[0, 0, half_x:, half_y:] = 3 
+ 
 
 # Create a grid of x and y values
 x = np.linspace(0, 8 * np.pi, sim_shape[0])
@@ -98,19 +112,6 @@ ff.execute("\t\tFireNode[domain=0;loc=(650,700,0);vel=(0,0,0);t=0;state=init;fro
 ff.execute("\t\tFireNode[domain=0;loc=(700,700,0);vel=(0,0,0);t=0;state=init;frontId=2]")
 ff.execute("\t\tFireNode[domain=0;loc=(700,300,0);vel=(0,0,0);t=0;state=init;frontId=2]")
 
-# ff.execute("\tFireFront[id=2;domain=0;t=0]")
-# ff.execute("\t\tFireNode[domain=0;loc=(300,300,0);vel=(0,0,0);t=0;state=init;frontId=2]")
-# ff.execute("\t\tFireNode[domain=0;loc=(300,700,0);vel=(0,0,0);t=0;state=init;frontId=2]")
-# ff.execute("\t\tFireNode[domain=0;loc=(700,700,0);vel=(0,0,0);t=0;state=init;frontId=2]")
-# ff.execute("\t\tFireNode[domain=0;loc=(700,300,0);vel=(0,0,0);t=0;state=init;frontId=2]")
-# ff.execute("\t\tFireFront[id=3;domain=0;t=0]")
-# ff.execute("\t\t\tFireNode[domain=0;loc=(650,650,0);vel=(0,0,0);t=0;state=init;frontId=2]")
-# ff.execute("\t\t\tFireNode[domain=0;loc=(350,650,0);vel=(0,0,0);t=0;state=init;frontId=2]")
-# ff.execute("\t\t\tFireNode[domain=0;loc=(350,350,0);vel=(0,0,0);t=0;state=init;frontId=2]")
-# ff.execute("\t\t\tFireNode[domain=0;loc=(650,350,0);vel=(0,0,0);t=0;state=init;frontId=2]")
-
- 
-
 # Loop over number of timesteps, step by step_size
 pathes = []
 
@@ -123,8 +124,6 @@ for i in range(1, nb_steps+1):
         # Get pathes from previous execution
         newPathes = printToPathe(ff.execute("print[]"))
         pathes += newPathes
- 
-
     except KeyboardInterrupt:
         # Keyboard interrupt in case simulation take a while and we want to show current state of simulation
         break
@@ -137,8 +136,8 @@ print(f"Total time taken: {duration} seconds")
 
 ffplotExtents =(float(ff["SWx"]),float(ff["SWx"]) + float(ff["Lx"]),float(ff["SWy"]),float(ff["SWy"]) + float(ff["Ly"]))
 
-plot_simulation(pathes,None,None,  ffplotExtents ,scalMap=ff.getDoubleArray("BMap")[0,0,:,:])
-
+plot_simulation(pathes,None,None,  ffplotExtents ,scalMap=ff.getDoubleArray("fuel")[0,0,:,:])
+ff.execute("save[parameter=speed;filename=intensity.png;cmap=hot;histogram=True]")
 #ff.execute("quit[]")
 
 

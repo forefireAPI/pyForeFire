@@ -9,8 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.path as mpath
 import matplotlib.patches as mpatches
-import pyforefire as forefire
-from forefire_helper import *
+import pyforefire as pyff
 
 ###############################################################################
 ##:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -117,14 +116,14 @@ step_size =10 #1               # The duration (in seconds) of time steps
 fuel_type = 1                  # The type of used fuel by default (Index in VVCoeffTable() )
 
 ##   Initialize pyforefire module
-ff = forefire.ForeFire()
+ff = pyff.ForeFire()
 ##  Fuel settings
 ff["fuelsTable"] = VVCoeffTable()
 ff["defaultFuelType"]=1.
 ##  ForeFire settings
 ff["spatialIncrement"]=0.2
-ff["minimalPropagativeFrontDepth"]=4.
-ff["perimeterResolution"]=10
+ff["minimalPropagativeFrontDepth"]=1.
+ff["perimeterResolution"]=5
 ff["initialFrontDepth"]=10
 ff["initialBurningDuration"]=50
 ff["relax"]=1
@@ -226,7 +225,7 @@ for i in range(1, nb_steps+1):
         fdepth=ff['frontDepth']
         print(f"goTo[t={(i*step_size)}]") 
         # Get pathes from previous execution
-        newPathes = printToPathe(ff.execute("print[]"))
+        newPathes = pyff.helpers.printToPathe(ff.execute("print[]"))
         pathes += newPathes
         bmap=ff.getDoubleArray("BMap")
         hey=ff.getDoubleArray('frontDepth')

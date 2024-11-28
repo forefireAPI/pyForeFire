@@ -9,8 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.path as mpath
 import matplotlib.patches as mpatches
-import pyforefire as forefire
-from forefire_helper import *
+import pyforefire as pyff
+
 
 ###############################################################################
 ##:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -72,7 +72,7 @@ step_size = 3 #1               # The duration (in seconds) of time steps
 fuel_type = 1                   # The type of used fuel by default (Index in VVCoeffTable() )
 
 ##   Initialize pyforefire module
-ff = forefire.ForeFire()
+ff = pyff.ForeFire()
 
 ##  Fuel settings
 ff["fuelsTable"] = VVCoeffTable()
@@ -191,7 +191,7 @@ for i in range(1, nb_steps+1):
         fdepth=ff['frontDepth']
         print(f"goTo[t={(i*step_size)}]") 
         # Get pathes from previous execution
-        newPathes = printToPathe(ff.execute("print[]"))
+        newPathes = pyff.helpers.printToPathe(ff.execute("print[]"))
         pathes += newPathes
         bmap=ff.getDoubleArray("BMap")
         hey=ff.getDoubleArray('frontDepth')
@@ -224,4 +224,4 @@ for i in range(1, nb_steps+1):
 # ffplotExtents=(x1-fact*domain_width,x2+fact*domain_width,y1-fact*domain_height,y2+fact*domain_height)
 # plot_simulation(pathes,None ,None,  ffplotExtents ,scalMap=None)
 ffplotExtents =(float(ff["SWx"]),float(ff["SWx"]) + float(ff["Lx"]),float(ff["SWy"]),float(ff["SWy"]) + float(ff["Ly"]))
-plot_simulation(pathes,None ,None,  ffplotExtents ,scalMap=ff.getDoubleArray("BMap")[0,0,:,:])
+pyff.helpers.plot_simulation(pathes,None ,None,  ffplotExtents ,scalMap=ff.getDoubleArray("BMap")[0,0,:,:])

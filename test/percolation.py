@@ -11,7 +11,7 @@ from forefire_helper import *
 
 ## Simulation Parameters ##
 nb_steps = 5                 # The number of step the simulation will execute
-step_size = 3600                 # The duration (in seconds) between each step
+step_size =   3600              # The duration (in seconds) between each step
 windU = 0                       # The Horizontal wind
 windV = 3                      # The Vertical wind
 fuel_file_path = './fuels.ff'   # The path of fuel file
@@ -27,9 +27,9 @@ ff = forefire.ForeFire()
 # Set advanced simulation parameters
 ff.setString("ForeFireDataDirectory", ".")
 ff.setString("fuelsTableFile", fuel_file_path)
-ff.setDouble("spatialIncrement",0.2)
+ff.setDouble("spatialIncrement",0.4)
 ff.setDouble("minimalPropagativeFrontDepth",20)
-ff.setDouble("perimeterResolution",2)
+ff.setDouble("perimeterResolution",4)
 ff.setDouble("initialFrontDepth",5)
 ff.setDouble("relax",.2)
 ff.setDouble("smoothing",0)

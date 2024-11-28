@@ -5,17 +5,17 @@ import matplotlib.patches as mpatches
 import matplotlib.colors as mcolors
 import math
 import xarray as xr
-import pyforefire as forefire
+import pyforefire as pyff
+from pyforefire.helpers import *
 from datetime import datetime
 import time
 
-from forefire_helper import *
-
 landscape_file_path = "sampleUVCoeffLandscape.nc"
 
-ff = forefire.ForeFire()
- 
+ff = pyff.ForeFire()
+
 ff["fuelsTable"] = standardRothermelFuelTable()
+
 ff["propagationModel"] = "Rothermel"
 ff["spatialIncrement"] = 3
 ff["perimeterResolution"] = 10
@@ -25,11 +25,11 @@ ff["minSpeed"] = 0.30
 ff["propagationSpeedAdjustmentFactor"] = 1
 ff["bmapLayer"] = 1
 
-testRunMode = "Instructions"
+testRunMode = "Script"
 
 if testRunMode == "Script":
     ff.execute(f'loadData[{landscape_file_path};2009-07-24T11:37:39Z]')
-    domain_string = f'FireDomain[sw=({ff["SWx"]},{ff["SWy"]},0);ne=({ff["SWx"] + ff["Lx"]},{ff["SWy"] + ff["Ly"]},0);t=0]'
+   # domain_string = f'FireDomain[sw=({ff["SWx"]},{ff["SWy"]},0);ne=({ff["SWx"] + ff["Lx"]},{ff["SWy"] + ff["Ly"]},0);t=0]'
 
 
 if testRunMode == "Instructions":
@@ -38,6 +38,9 @@ if testRunMode == "Instructions":
     dom = lcp.domain.attrs    
     
     fuel_map = lcp.fuel.data
+    
+    fuel_map[0,0,:,:] = 82
+    
     altitude_map = lcp.altitude.data
     wind_map = lcp.wind.data
     windU=wind_map[0:1,:,:,:]
@@ -63,14 +66,13 @@ if testRunMode == "Instructions":
     domain_string = f'FireDomain[sw=({dom["SWx"]},{dom["SWy"]},0);ne=({dom["SWx"] + dom["Lx"]},{dom["SWy"] + dom["Ly"]},0);t=0]'
     ff.execute(domain_string)
     
-    
-    ff.addLayer("propagation",ff["propagationModel"],"propagationModel")
+
     ff.addIndexLayer("table", "fuel", dom["SWx"], dom["SWy"], 0, dom["Lx"], dom["Ly"], 0, fuel_map)
     ff.addScalarLayer("data", "altitude", dom["SWx"], dom["SWy"], 0, dom["Lx"], dom["Ly"], 0, altitude_map)
-        
     ff.addScalarLayer("windScalDir", "windU", dom["SWx"], dom["SWy"], 0, dom["Lx"], dom["Ly"], 0, windU)
     ff.addScalarLayer("windScalDir", "windV", dom["SWx"], dom["SWy"], 0, dom["Lx"], dom["Ly"], 0, windV)
-
+    ff.addLayer("propagation",ff["propagationModel"],"propagationModel")
+    
 
 ff.execute("startFire[loc=(506666,4625385,0);t=0]")
 ff.execute("startFire[loc=(506666,4614485,0);t=0]")
@@ -79,7 +81,7 @@ start_time = time.time()
 
 pathes = []
 
-nb_steps = 10  # The number of steps the simulation will execute
+nb_steps = 12  # The number of steps the simulation will execute
 step_size = 300  # The duration (in seconds) between each step
 angle_deg = 30.0  # The angle by which to rotate the vector at each step
 norm = 20  # The norm of the vector
@@ -110,3 +112,4 @@ ffplotExtents =(float(ff["SWx"]),float(ff["SWx"]) + float(ff["Lx"]),float(ff["SW
  
 print(f"Total time taken: {duration} seconds")
 plot_simulation(pathes,ff.getDoubleArray("fuel")[0,0,:,:] ,ff.getDoubleArray("altitude")[0,0,:,:],  ffplotExtents ,scalMap=ff.getDoubleArray("BMap")[0,0,:,:])
+ 

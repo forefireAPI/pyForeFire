@@ -10,8 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.path as mpath
 import matplotlib.patches as mpatches
-import pyforefire as forefire
-from forefire_helper import *
+import pyforefire as pyff
+
 
 ###############################################################################
 ##:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -84,7 +84,7 @@ step_size = 10 #1               # The duration (in seconds) of time steps
 fuel_type = 1                   # The type of used fuel by default (Index in VVCoeffTable() )
 
 ##   Initialize pyforefire module
-ff = forefire.ForeFire()
+ff = pyff.ForeFire()
 
 ##  Fuel settings
 ff["fuelsTable"] = VVCoeffTable()
@@ -153,7 +153,7 @@ for i in range(1, nb_steps+1):
         
         ff.execute("goTo[t=%f]" % (i*step_size))
         # Get pathes from previous execution
-        newPathes = printToPathe(ff.execute("print[]"))
+        newPathes = pyff.helpers.printToPathe(ff.execute("print[]"))
         pathes += newPathes
         bmap=ff.getDoubleArray("BMap")
 
