@@ -74,8 +74,8 @@ ff["bmapLayer"]=1
 ##  Propagation model settings
 ff["speed_module"]=1.  ## spreading velocity (meters seconds-1)
 ff["propagationModel"] = "BMapLoggerForANNTraining"
-ff["FFANNPropagationModelPath"] = "/Users/filippi_j/soft/pyForeFire/test/empty.ffann"
-ff["FFBMapLoggerCSVPath"] = "/Users/filippi_j/soft/pyForeFire/test/RNNdata.csv"
+ff["FFANNPropagationModelPath"] = "/Users/filippi_j/soft/pyForeFire/examples/test/empty.ffann"
+ff["FFBMapLoggerCSVPath"] = "/Users/filippi_j/soft/pyForeFire/examples/test/RNNdata.csv"
 ff["LookAheadDistanceForeTimeGradientDataLayer"] = 10    
 ## Total size of simulation domain (meters)
 sim_shape = (3000, 2000)

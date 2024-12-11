@@ -5,8 +5,8 @@ import matplotlib.path as mpath
 import matplotlib.patches as mpatches
 from matplotlib.colors import ListedColormap
 import pyforefire as forefire
-
-from forefire_helper import *
+ 
+from pyforefire import helpers
 
 
 ## Simulation Parameters ##

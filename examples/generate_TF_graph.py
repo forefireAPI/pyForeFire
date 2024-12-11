@@ -3,7 +3,7 @@ import tensorflow as tf
 import time
 import struct
 from pyforefire.helpers import *
-from pyforefire.tf_helpers import *
+from wildfire_ROS_models.tf_ros_model import *
 
 def emptyModelForLog(input_names,ANN_output_path):
     input_size = len(input_names)
@@ -68,5 +68,5 @@ def sampleRun():
     for i, result in enumerate(verification_output):
         print(f"{verification_inputs[i]} result: {result[0]}")
         
-#emptyModelForLog(["fuel.vv_coeff",],"empty.ffann")
+emptyModelForLog(["fuel.vv_coeff",],"empty.ffann")
 sampleRun()

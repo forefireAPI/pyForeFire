@@ -11,8 +11,7 @@ import time
 import pandas as pd
 import sys
 import tensorflow as tf
-from forefire_helper import *
-from forefire_TF_helpers import *
+
 from sklearn.metrics import mean_squared_error
 from keras.callbacks import EarlyStopping
 import h5netcdf.legacyapi as netCDF4
@@ -64,7 +63,7 @@ at_file_path = "ForeFire.0.nc"
 initialPropagationModel = "Rothermel"
 
 ff = forefire.ForeFire()
-ff["fuelsTable"] = standardRothermelFuelTable()
+ff["fuelsTable"] = forefire.helpers.standardRothermelFuelTable()
 ff["spatialIncrement"] = 3
 ff["perimeterResolution"] = 10
 ff["minimalPropagativeFrontDepth"] = 40
@@ -80,7 +79,6 @@ ff["FFANNPropagationModelPath"] = f"{initialPropagationModel}.ffann"
 ff["FFBMapLoggerCSVPath"] = f"{initialPropagationModel}db.csv"
 ff["LookAheadDistanceForeTimeGradientDataLayer"] = 40   
 
-import pdb; pdb.set_trace()
 
 if phase == phaseRunForANN:
     ff["propagationModel"] = initialPropagationModel
