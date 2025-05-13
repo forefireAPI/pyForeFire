@@ -1,7 +1,12 @@
 # pyForeFire
 
+pyForeFire is now included in the main ForeFire repository at https://github.com/forefireAPI/forefire
+this repository is now  archived and discontinued
+
+
 pyForeFire is a Python library for dealing with C++ library ForeFire.
 It provide numerous ForeFire bindings, written with pybind11 python library.
+
 
 ## Building pyForeFire
 
